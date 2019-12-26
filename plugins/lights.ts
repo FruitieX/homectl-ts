@@ -1,9 +1,11 @@
 import * as t from 'io-ts'
-import { PluginProps } from "../types";
-import { HomectlPlugin } from '../plugins';
 import { TinyColor } from '@ctrl/tinycolor'
 
+import { PluginProps, throwDecoder } from "../types";
+import { HomectlPlugin } from '../plugins';
+
 const Config = t.type({
+
 })
 type Config = t.TypeOf<typeof Config>
 
@@ -28,12 +30,20 @@ interface State {
 
 export default class LightsPlugin extends HomectlPlugin<Config> {
   state: State = { lights: {} }
+  knownLights: Array<string> = []
 
   constructor(props: PluginProps<Config>) {
     super(props, Config);
   }
 
   async register() {
+    this.app.on('registerLight', (msg: unknown) => {
+      const lightId = throwDecoder(t.string)(msg, "Unable to decode registerLight message")
+
+      this.knownLights.push(lightId)
+
+      this.app.emit('registerDevice', `integrations/${this.id}/${lightId}`)
+    })
   }
 
   activateScene(scene: string) {

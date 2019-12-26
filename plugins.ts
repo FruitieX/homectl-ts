@@ -1,5 +1,6 @@
 import Koa from 'koa'
 import * as t from 'io-ts'
+
 import { AppConfig, throwDecoder, PluginProps, SendMsg, IntegrationConfig } from './types'
 
 export abstract class HomectlPlugin<A> {

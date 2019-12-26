@@ -1,73 +1,49 @@
-// implement handleMsg that responds with devices in given group
 import * as t from 'io-ts'
-import { PluginProps, ScenesConfig, SceneCommand, GroupConfig } from "./types";
+import minimatch from 'minimatch';
+
+import { PluginProps, GroupsConfig, throwDecoder } from "./types";
 import { HomectlPlugin } from './plugins';
 
-const Config = ScenesConfig
+const Config = GroupsConfig
 type Config = t.TypeOf<typeof Config>
 
 /**
- * Scenes plugin
+ * Groups plugin
  * 
- * Manages scenes in configuration.
+ * Keeps track of registered devices and responds to messages with a list of known devices in given group.
  */
 
-export default class ScenesPlugin extends HomectlPlugin<Config> {
-  scenes: ScenesConfig = {}
+export default class GroupsPlugin extends HomectlPlugin<Config> {
+  groups: GroupsConfig = {}
+  knownDevices: Array<string> = []
 
   constructor(props: PluginProps<Config>) {
     super(props, Config);
   }
 
   async register() {
-    this.scenes = this.config
+    this.groups = this.config
+
+    this.app.on('registerDevice', (msg: unknown) => {
+      const device = throwDecoder(t.string)(msg, "Unable to decode registerDevice message")
+
+      this.knownDevices.push(device)
+    })
   }
 
   async handleMsg(path: string, payload: unknown) {
-    const sceneName = path
+    const groupName = path
 
-    const scene = this.scenes[sceneName]
-    if (!scene) return this.log(`no scene found with name ${sceneName}, dropping message: ${path} ${payload}`)
+    const group = this.groups[groupName]
+    if (!group) return this.log(`No group found with name ${groupName}, dropping message: ${path} ${payload}`)
 
-    const sceneCommands: Array<SceneCommand> = []
-
-    for (const sceneCommand of scene.devices) {
-      const dynamicProps = await this.getDynamicProps(sceneCommand)
-      const paths = await this.expandPath(sceneCommand.path)
-      const duplicateSceneCommands = paths.map(path => ({
-        ...sceneCommand,
-        ...dynamicProps,
-        path
-      }))
-      sceneCommands.push(...duplicateSceneCommands)
-    }
-
-    return sceneCommands
-  }
-
-  async expandPath(path: string) {
-    if (!path.startsWith('groups/')) return [path]
-
-    const groupConfig = await this.sendMsg(path, GroupConfig);
-    const devices = groupConfig.devices
+    const devices = this.knownDevices.filter((...deviceArgs) =>
+      // see if we can find any path that matches to this device
+      group.devices.find(path =>
+        minimatch.filter(path)(...deviceArgs)
+      )
+    )
 
     return devices
-  }
-
-  async getDynamicProps(props: { [key: string]: unknown }) {
-    const dynamicProps: { [key: string]: string } = {}
-
-    for (const key in props) {
-      const value = props[key]
-
-      if (typeof value === 'string' && value.startsWith('integrations/')) {
-        const path = value
-        // FIXME: only supports string values right now
-        const dynamicValue = await this.sendMsg(path, t.string)
-        dynamicProps[key] = dynamicValue
-      }
-    }
-
-    return dynamicProps
   }
 }

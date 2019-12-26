@@ -1,4 +1,5 @@
 import * as t from 'io-ts'
+
 import { PluginProps, IntegrationsConfig } from './types'
 import { HomectlPlugin, loadPlugin } from './plugins'
 

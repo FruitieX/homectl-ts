@@ -1,4 +1,5 @@
 import { cosmiconfig } from 'cosmiconfig'
+
 import { AppConfig, throwDecoder } from './types';
 
 const explorer = cosmiconfig("homectl");

@@ -1,7 +1,7 @@
 import Koa from 'koa'
 import * as t from 'io-ts'
 import { pipe } from 'fp-ts/lib/pipeable';
-import { fold, Either, left } from 'fp-ts/lib/Either';
+import { fold, left } from 'fp-ts/lib/Either';
 import { PathReporter } from 'io-ts/lib/PathReporter';
 import { identity } from 'fp-ts/lib/function';
 

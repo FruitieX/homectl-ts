@@ -1,6 +1,7 @@
 import * as t from 'io-ts'
-import { PluginProps } from "../types";
 import R from 'ramda';
+
+import { PluginProps } from "../types";
 import { HomectlPlugin } from '../plugins';
 
 const Config = t.type({
@@ -40,6 +41,13 @@ export default class DummyDevicesPlugin extends HomectlPlugin<Config> {
     this.app.on('start', () => {
       this.log(this.state)
     })
+  }
+
+  async start() {
+    for (const device in this.config.devices) {
+      this.app.emit('registerDevice', `integrations/${this.id}/${device}`)
+      this.app.emit('registerLight', `${this.id}/${device}`)
+    }
   }
 
   async handleMsg(path: string, payload: unknown) {

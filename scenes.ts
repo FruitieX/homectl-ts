@@ -1,4 +1,5 @@
 import * as t from 'io-ts'
+
 import { PluginProps, ScenesConfig, SceneCommand, GroupConfig } from "./types";
 import { HomectlPlugin } from './plugins';
 

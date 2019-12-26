@@ -1,5 +1,6 @@
 import Koa from 'koa'
 import * as t from 'io-ts'
+
 import { loadConfig } from './config';
 import IntegrationsPlugin from './integrations';
 import { HomectlPlugin } from './plugins';
