@@ -1,0 +1,1 @@
+// implement handleMsg that responds with devices in given group
