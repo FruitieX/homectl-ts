@@ -3,8 +3,8 @@ import Router from 'koa-router';
 import bodyParser from 'koa-bodyparser';
 import * as t from 'io-ts'
 
-import { PluginProps } from "../types";
-import { HomectlPlugin } from '../plugins';
+import { PluginProps } from "../../types";
+import { HomectlPlugin } from '../../plugins';
 
 const Config = t.type({
   port: t.number,

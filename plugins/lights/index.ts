@@ -1,8 +1,8 @@
 import * as t from 'io-ts'
 import { TinyColor } from '@ctrl/tinycolor'
 
-import { PluginProps, throwDecoder } from "../types";
-import { HomectlPlugin } from '../plugins';
+import { PluginProps, throwDecoder } from "../../types";
+import { HomectlPlugin } from '../../plugins';
 
 const Config = t.type({
 

@@ -1,7 +1,7 @@
 import * as t from 'io-ts'
 
-import { PluginProps } from "../types";
-import { HomectlPlugin } from '../plugins';
+import { PluginProps } from "../../types";
+import { HomectlPlugin } from '../../plugins';
 
 const Config = t.type({
   plugin: t.literal("dummy")

@@ -1,8 +1,8 @@
 import * as t from 'io-ts'
 import R from 'ramda';
 
-import { PluginProps } from "../types";
-import { HomectlPlugin } from '../plugins';
+import { PluginProps } from "../../types";
+import { HomectlPlugin } from '../../plugins';
 
 const Config = t.type({
   devices: t.array(t.string),
