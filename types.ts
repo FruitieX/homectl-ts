@@ -4,6 +4,7 @@ import { pipe } from 'fp-ts/lib/pipeable';
 import { fold, left } from 'fp-ts/lib/Either';
 import { PathReporter } from 'io-ts/lib/PathReporter';
 import { identity } from 'fp-ts/lib/function';
+import { reporter } from 'io-ts-reporters'
 
 export const IntegrationConfig = t.type({
   plugin: t.string
@@ -57,7 +58,7 @@ export const throwDecoder = <A>(decoder: t.Decoder<unknown, A>) => (value: unkno
     decoder.decode(value),
     fold(e => {
       console.error(msg)
-      console.log(JSON.stringify(PathReporter.report(left(e))))
+      console.log(JSON.stringify(reporter(left(e))))
       process.exit(1)
     }, identity)
   )
