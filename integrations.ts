@@ -16,7 +16,7 @@ type Config = t.TypeOf<typeof Config>
 export default class IntegrationsPlugin extends HomectlPlugin<Config> {
   integrationInstances: { [key: string]: HomectlPlugin<unknown> | undefined } = {};
 
-  constructor(props: PluginProps<IntegrationsConfig>) {
+  constructor(props: PluginProps<Config>) {
     super(props, Config.decode(props.config));
   }
 

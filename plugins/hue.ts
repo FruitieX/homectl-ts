@@ -8,12 +8,12 @@ const Config = t.type({
 type Config = t.TypeOf<typeof Config>
 
 /**
- * Dummy plugin
+ * Philips Hue plugin
  * 
- * Does the bare minimum and nothing else
+ * Makes Hue bulbs and switches available as homectl devices.
  */
 
-export default class DummyPlugin extends HomectlPlugin<Config> {
+export default class HuePlugin extends HomectlPlugin<Config> {
   constructor(props: PluginProps<Config>) {
     super(props, Config.decode(props.config));
   }

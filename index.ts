@@ -2,6 +2,7 @@ import Koa from 'koa'
 import { loadConfig } from './config';
 import IntegrationsPlugin from './integrations';
 import { HomectlPlugin } from './plugins';
+import ScenesPlugin from './scenes';
 
 const app = new Koa();
 
@@ -28,6 +29,7 @@ const init = async () => {
   }
 
   subsystems.integrations = new IntegrationsPlugin({ config: config.integrations, ...commonProps })
+  subsystems.scenes = new ScenesPlugin({ config: config.scenes, ...commonProps })
 
   for (const subsystemName in subsystems) {
     const subsystem = subsystems[subsystemName];
