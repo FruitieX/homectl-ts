@@ -5,12 +5,15 @@ import { PluginProps } from "../types";
 import { HomectlPlugin } from '../plugins';
 
 const Config = t.type({
-  devices: t.array(t.string)
+  devices: t.array(t.string),
+  lights: t.union([t.boolean, t.undefined])
 })
 type Config = t.TypeOf<typeof Config>
 
-type Device = {
-  power: boolean
+interface Device {
+  power: boolean;
+
+  [key: string]: unknown
 }
 
 interface State {
@@ -38,15 +41,16 @@ export default class DummyDevicesPlugin extends HomectlPlugin<Config> {
 
   async register() {
     this.log('Registered dummy devices plugin')
-    this.app.on('start', () => {
-      this.log(this.state)
-    })
   }
 
   async start() {
-    for (const device in this.config.devices) {
+    for (const device of this.config.devices) {
       this.app.emit('registerDevice', `integrations/${this.id}/${device}`)
-      this.app.emit('registerLight', `${this.id}/${device}`)
+
+      // lights can register with the lights plugin if available
+      if (this.config.lights) {
+        this.app.emit('registerLight', `${this.id}/${device}`)
+      }
     }
   }
 

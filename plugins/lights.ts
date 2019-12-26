@@ -41,6 +41,7 @@ export default class LightsPlugin extends HomectlPlugin<Config> {
       const lightId = throwDecoder(t.string)(msg, "Unable to decode registerLight message")
 
       this.knownLights.push(lightId)
+      this.log(`Discovered light "${lightId}"`)
 
       this.app.emit('registerDevice', `integrations/${this.id}/${lightId}`)
     })

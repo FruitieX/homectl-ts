@@ -6,13 +6,15 @@ import IntegrationsPlugin from './integrations';
 import { HomectlPlugin } from './plugins';
 import ScenesPlugin from './scenes';
 import { throwDecoder } from './types';
+import GroupsPlugin from './groups';
 
 const app = new Koa();
 
+/**
+ * Loads all subsystems in order and calls .start() on them when all subsystems have been loaded.
+ */
 const init = async () => {
   const config = await loadConfig()
-  console.log('Successfully loaded config.')
-  console.log(config);
 
   const subsystems: { [name: string]: HomectlPlugin<unknown> } = {}
 
@@ -37,6 +39,7 @@ const init = async () => {
 
   subsystems.integrations = new IntegrationsPlugin({ id: "integrations", config: config.integrations, ...commonProps })
   subsystems.scenes = new ScenesPlugin({ id: "scenes", config: config.scenes, ...commonProps })
+  subsystems.groups = new GroupsPlugin({ id: "groups", config: config.groups, ...commonProps })
 
   for (const subsystemName in subsystems) {
     const subsystem = subsystems[subsystemName];
@@ -48,6 +51,8 @@ const init = async () => {
     const subsystem = subsystems[subsystemName];
     await subsystem.start()
   }
+
+  console.log(`Initialization complete.`)
 }
 
 init();
