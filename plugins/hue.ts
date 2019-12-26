@@ -19,7 +19,7 @@ export default class HuePlugin extends HomectlPlugin<Config> {
   }
 
   async register() {
-    console.log('registered dummy plugin', this.config)
+    this.log('Registered hue plugin', this.config)
 
     // poll scenes to be optimized every 10s with this.sendMsg(scenes/name), program into bridge if changed enough
   }

@@ -40,6 +40,6 @@ export default class RestPlugin extends HomectlPlugin<Config> {
 
     const port = this.config.port || 1234;
     app.listen(port);
-    console.log(`REST API bound to port ${port}`);
+    this.log(`REST API bound to port ${port}`);
   }
 }

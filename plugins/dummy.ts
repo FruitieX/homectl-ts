@@ -19,6 +19,6 @@ export default class DummyPlugin extends HomectlPlugin<Config> {
   }
 
   async register() {
-    console.log('registered dummy plugin', this.config)
+    this.log('Registered dummy plugin', this.config)
   }
 }

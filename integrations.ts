@@ -19,18 +19,19 @@ export default class IntegrationsPlugin extends HomectlPlugin<Config> {
   }
 
   async register() {
-    for (const integrationName in this.config) {
-      const config = this.config[integrationName]
+    for (const id in this.config) {
+      const config = this.config[id]
       const instance = loadPlugin({
+        id,
         config,
         app: this.app,
         appConfig: this.appConfig,
         sendMsg: this.sendMsg
       })
 
-      this.integrationInstances[integrationName] = instance;
+      this.integrationInstances[id] = instance;
       await instance.register()
-      console.log(`loaded integration ${integrationName}`)
+      this.log(`Loaded integration ${id}`)
     }
   }
 
@@ -45,7 +46,7 @@ export default class IntegrationsPlugin extends HomectlPlugin<Config> {
     const [integration, ...fwdPath] = path.split('/')
 
     const instance = this.integrationInstances[integration]
-    if (!instance) return console.log(`no integration loaded with name ${integration}, dropping message: ${path} ${payload}`)
+    if (!instance) return this.log(`no integration loaded with name ${integration}, dropping message: ${path} ${payload}`)
 
     return instance.handleMsg(fwdPath.join('/'), payload);
   }

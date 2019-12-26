@@ -19,12 +19,12 @@ const init = async () => {
     const [subsystem, ...splitFwdPath] = path.split('/')
 
     const instance = subsystems[subsystem]
-    if (!instance) throw new Error(`no subsystem loaded with name ${subsystem}, dropping message: ${path} ${payload}`)
+    if (!instance) throw new Error(`No subsystem loaded with name ${subsystem}, dropping message: ${path} ${payload}`)
 
     const fwdPath = splitFwdPath.join('/')
     const retVal = await instance.handleMsg(fwdPath, payload);
 
-    const decoded = throwDecoder(decoder)(retVal, `unable to decode return value of ${fwdPath} ${payload}`)
+    const decoded = throwDecoder(decoder)(retVal, `Unable to decode return value of ${fwdPath} ${payload}`)
     return decoded
   }
 
@@ -34,13 +34,13 @@ const init = async () => {
     sendMsg
   }
 
-  subsystems.integrations = new IntegrationsPlugin({ config: config.integrations, ...commonProps })
-  subsystems.scenes = new ScenesPlugin({ config: config.scenes, ...commonProps })
+  subsystems.integrations = new IntegrationsPlugin({ id: "integrations", config: config.integrations, ...commonProps })
+  subsystems.scenes = new ScenesPlugin({ id: "scenes", config: config.scenes, ...commonProps })
 
   for (const subsystemName in subsystems) {
     const subsystem = subsystems[subsystemName];
     await subsystem.register()
-    console.log(`loaded subsystem ${subsystemName}`)
+    console.log(`Loaded subsystem ${subsystemName}`)
   }
 
   for (const subsystemName in subsystems) {

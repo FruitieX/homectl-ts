@@ -64,6 +64,7 @@ export const throwDecoder = <A>(decoder: t.Decoder<unknown, A>) => (value: unkno
 
 export type SendMsg = <A>(path: string, decoder: t.Decoder<unknown, A>, payload?: unknown) => Promise<A>
 export interface PluginProps<A> {
+  id: string,
   config: A,
   app: Koa,
   appConfig: AppConfig,

@@ -1,19 +1,24 @@
 import Koa from 'koa'
 import * as t from 'io-ts'
 import { AppConfig, throwDecoder, PluginProps, SendMsg, IntegrationConfig } from './types'
-import { Either, left } from 'fp-ts/lib/Either'
 
 export abstract class HomectlPlugin<A> {
+  id: string
   config: A
   app: Koa
   appConfig: AppConfig
   sendMsg: SendMsg
 
-  constructor({ config, app, appConfig, sendMsg }: PluginProps<A>, decoder: t.Decoder<unknown, A>) {
+  constructor({ id, config, app, appConfig, sendMsg }: PluginProps<A>, decoder: t.Decoder<unknown, A>) {
+    this.id = id
     this.config = throwDecoder(decoder)(config, `Error while decoding integration config, quitting...`)
     this.app = app
     this.appConfig = appConfig
     this.sendMsg = sendMsg
+  }
+
+  log(...msg: any[]) {
+    console.log(`[${this.id}]:`, ...msg)
   }
 
   /**

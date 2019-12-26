@@ -36,13 +36,13 @@ export default class DummyDevicesPlugin extends HomectlPlugin<Config> {
   }
 
   async register() {
-    console.log('registered dummy devices plugin')
+    this.log('Registered dummy devices plugin')
     this.app.on('start', () => {
-      console.log(this.state)
+      this.log(this.state)
     })
   }
 
   async handleMsg(path: string, payload: unknown) {
-    console.log('got msg', path, payload)
+    this.log('Got msg', path, payload)
   }
 }

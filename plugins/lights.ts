@@ -50,7 +50,7 @@ export default class LightsPlugin extends HomectlPlugin<Config> {
         // this.activateScene();
         break;
       }
-      default: console.log(`unknown cmd sent to lights integration: ${cmd}`)
+      default: this.log(`Unknown cmd sent to lights integration: ${cmd}`)
     }
   }
 }
