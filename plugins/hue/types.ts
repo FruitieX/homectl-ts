@@ -14,7 +14,10 @@ export const BridgeLights = t.record(t.string, BridgeLight);
 export const BridgeSceneSummary = t.type({
   name: t.string
 })
+export type BridgeSceneSummary = t.TypeOf<typeof BridgeSceneSummary>
 export const BridgeScenesSummary = t.record(t.string, BridgeSceneSummary);
+
+export const BridgeSceneCreatedResponse = t.tuple([t.type({ success: t.type({ id: t.string }) })])
 
 // maybe we can do without the rules?
 // export const BridgeRuleCondition = t.type({
@@ -51,3 +54,4 @@ export const BridgeState = t.type({
   scenes: BridgeScenesSummary,
   sensors: BridgeSensors
 })
+export type BridgeState = t.TypeOf<typeof BridgeState>

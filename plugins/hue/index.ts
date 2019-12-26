@@ -1,9 +1,14 @@
 import * as t from 'io-ts'
+import { findFirst } from 'fp-ts/lib/Array'
 import axios, { Method } from 'axios'
 
-import { BridgeState } from "./types";
+import { BridgeState, BridgeSceneSummary, BridgeSceneCreatedResponse } from "./types";
 import { PluginProps, throwDecoder } from "../../types";
 import { HomectlPlugin } from '../../plugins';
+import { pipe } from 'fp-ts/lib/pipeable';
+import { fold } from 'fp-ts/lib/Option';
+import { identity } from 'fp-ts/lib/function';
+import { findHomectlScene } from './utils';
 
 const Config = t.type({
   addr: t.string,
@@ -18,6 +23,8 @@ type Config = t.TypeOf<typeof Config>
  */
 
 export default class HuePlugin extends HomectlPlugin<Config> {
+  homectlSceneId = '';
+
   constructor(props: PluginProps<Config>) {
     super(props, Config);
   }
@@ -31,9 +38,17 @@ export default class HuePlugin extends HomectlPlugin<Config> {
   }
 
   async register() {
-    const initState = await this.request(BridgeState, '/')
-    this.log({ initState })
+    const bridgeState = await this.request(BridgeState, '/')
+    this.log({ bridgeState })
 
+    let homectlSceneId = findHomectlScene(bridgeState)
+    if (!homectlSceneId) {
+      const createdScene = await this.request(BridgeSceneCreatedResponse, '/scenes', 'POST', { lights: [], recycle: true, name: "homectl" })
+      homectlSceneId = createdScene[0].success.id
+    }
+    this.homectlSceneId = homectlSceneId
+
+    this.log({ homectlSceneId })
     // poll scenes to be optimized every 10s with this.sendMsg(scenes/name), program into bridge if changed enough
   }
 
