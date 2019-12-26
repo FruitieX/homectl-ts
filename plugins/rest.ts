@@ -23,7 +23,7 @@ const getDevices: Router.IMiddleware = (ctx, next) => {
 
 export default class RestPlugin extends HomectlPlugin<Config> {
   constructor(props: PluginProps<Config>) {
-    super(props, Config.decode(props.config));
+    super(props, Config);
   }
 
   async register() {
@@ -35,7 +35,7 @@ export default class RestPlugin extends HomectlPlugin<Config> {
 
     router.get('devices', '/devices', getDevices);
     router.post('msg', '/msg', ctx => {
-      this.sendMsg(ctx.request.body.path, ctx.request.body.payload)
+      this.sendMsg(ctx.request.body.path, t.unknown, ctx.request.body.payload)
     });
 
     const port = this.config.port || 1234;

@@ -28,7 +28,7 @@ export default class DummyDevicesPlugin extends HomectlPlugin<Config> {
   state: State
 
   constructor(props: PluginProps<Config>) {
-    super(props, Config.decode(props.config));
+    super(props, Config);
 
     this.state = {
       devices: R.zipObj(this.config.devices, R.map(_ => ({ power: false }), this.config.devices))

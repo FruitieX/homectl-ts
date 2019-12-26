@@ -15,7 +15,7 @@ type Config = t.TypeOf<typeof Config>
 
 export default class DummyPlugin extends HomectlPlugin<Config> {
   constructor(props: PluginProps<Config>) {
-    super(props, Config.decode(props.config));
+    super(props, Config);
   }
 
   async register() {

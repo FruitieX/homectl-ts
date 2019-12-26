@@ -30,7 +30,7 @@ export default class LightsPlugin extends HomectlPlugin<Config> {
   state: State = { lights: {} }
 
   constructor(props: PluginProps<Config>) {
-    super(props, Config.decode(props.config));
+    super(props, Config);
   }
 
   async register() {

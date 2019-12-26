@@ -1,7 +1,7 @@
 import Koa from 'koa'
 import * as t from 'io-ts'
 import { pipe } from 'fp-ts/lib/pipeable';
-import { fold, Either } from 'fp-ts/lib/Either';
+import { fold, Either, left } from 'fp-ts/lib/Either';
 import { PathReporter } from 'io-ts/lib/PathReporter';
 import { identity } from 'fp-ts/lib/function';
 
@@ -52,17 +52,17 @@ export const AppConfig = t.type({
 })
 export type AppConfig = t.TypeOf<typeof AppConfig>
 
-export const throwDecoder = <A>(decoded: Either<t.Errors, A>, msg: string): A =>
+export const throwDecoder = <A>(decoder: t.Decoder<unknown, A>) => (value: unknown, msg: string): A =>
   pipe(
-    decoded,
-    fold(() => {
+    decoder.decode(value),
+    fold(e => {
       console.error(msg)
-      console.log(JSON.stringify(PathReporter.report(decoded)))
+      console.log(JSON.stringify(PathReporter.report(left(e))))
       process.exit(1)
     }, identity)
   )
 
-export type SendMsg = (path: string, payload?: unknown) => void
+export type SendMsg = <A>(path: string, decoder: t.Decoder<unknown, A>, payload?: unknown) => Promise<A>
 export interface PluginProps<A> {
   config: A,
   app: Koa,

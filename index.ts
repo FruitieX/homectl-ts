@@ -1,8 +1,10 @@
 import Koa from 'koa'
+import * as t from 'io-ts'
 import { loadConfig } from './config';
 import IntegrationsPlugin from './integrations';
 import { HomectlPlugin } from './plugins';
 import ScenesPlugin from './scenes';
+import { throwDecoder } from './types';
 
 const app = new Koa();
 
@@ -13,13 +15,17 @@ const init = async () => {
 
   const subsystems: { [name: string]: HomectlPlugin<unknown> } = {}
 
-  const sendMsg = (path: string, payload: unknown) => {
-    const [subsystem, ...fwdPath] = path.split('/')
+  const sendMsg = async <A>(path: string, decoder: t.Decoder<unknown, A>, payload?: unknown) => {
+    const [subsystem, ...splitFwdPath] = path.split('/')
 
     const instance = subsystems[subsystem]
-    if (!instance) return console.log(`no subsystem loaded with name ${subsystem}, dropping message: ${path} ${payload}`)
+    if (!instance) throw new Error(`no subsystem loaded with name ${subsystem}, dropping message: ${path} ${payload}`)
 
-    return instance.handleMsg(fwdPath.join('/'), payload);
+    const fwdPath = splitFwdPath.join('/')
+    const retVal = await instance.handleMsg(fwdPath, payload);
+
+    const decoded = throwDecoder(decoder)(retVal, `unable to decode return value of ${fwdPath} ${payload}`)
+    return decoded
   }
 
   const commonProps = {

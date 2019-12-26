@@ -9,15 +9,11 @@ export abstract class HomectlPlugin<A> {
   appConfig: AppConfig
   sendMsg: SendMsg
 
-  constructor({ app, appConfig, sendMsg }: PluginProps<A>, decoded: Either<t.Errors, A>) {
-    this.config = this.decode(decoded)
+  constructor({ config, app, appConfig, sendMsg }: PluginProps<A>, decoder: t.Decoder<unknown, A>) {
+    this.config = throwDecoder(decoder)(config, `Error while decoding integration config, quitting...`)
     this.app = app
     this.appConfig = appConfig
     this.sendMsg = sendMsg
-  }
-
-  decode(decoded: Either<t.Errors, A>): A {
-    return throwDecoder(decoded, `Error while decoding integration config, quitting...`)
   }
 
   /**
@@ -42,7 +38,7 @@ export abstract class HomectlPlugin<A> {
 }
 
 class HomectlPluginImplementation<A> extends HomectlPlugin<A> {
-  constructor(props: PluginProps<A>) { super(props, left(<any>undefined)) }
+  constructor(props: PluginProps<A>) { super(props, <any>IntegrationConfig) }
   async register() { }
 }
 

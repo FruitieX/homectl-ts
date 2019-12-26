@@ -12,5 +12,5 @@ export const loadConfig = async () => {
   console.log(`Using configuration file: ${filepath}`)
   console.log('Decoding config...')
 
-  return throwDecoder(AppConfig.decode(config), `Error while decoding config, quitting...`)
+  return throwDecoder(AppConfig)(config, `Error while decoding config, quitting...`)
 }

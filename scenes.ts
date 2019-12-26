@@ -16,7 +16,7 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
   scenes: ScenesConfig = {}
 
   constructor(props: PluginProps<Config>) {
-    super(props, Config.decode(props.config));
+    super(props, Config);
   }
 
   async register() {
@@ -32,7 +32,7 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
     const sceneCommands: Array<SceneCommand> = []
 
     for (const sceneCommand of scene.devices) {
-      const paths = this.expandPath(sceneCommand.path)
+      const paths = await this.expandPath(sceneCommand.path)
       const duplicateSceneCommands = paths.map(path => ({
         ...sceneCommand,
         path
@@ -43,11 +43,10 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
     return sceneCommands
   }
 
-  expandPath(path: string) {
+  async expandPath(path: string) {
     if (!path.startsWith('groups/')) return [path]
 
-    const mGroupConfig = this.sendMsg(path);
-    const groupConfig = throwDecoder(GroupConfig.decode(mGroupConfig), 'Failed to decode group config')
+    const groupConfig = await this.sendMsg(path, GroupConfig);
     const devices = groupConfig.devices
 
     return devices
