@@ -1,7 +1,7 @@
 import * as t from 'io-ts'
 
-import { PluginProps, IntegrationsConfig } from './types'
-import { HomectlPlugin, loadPlugin } from './plugins'
+import { PluginProps, IntegrationsConfig } from '../types'
+import { HomectlPlugin, loadPlugin } from '../plugins'
 
 const Config = IntegrationsConfig
 type Config = t.TypeOf<typeof Config>
@@ -47,7 +47,7 @@ export default class IntegrationsPlugin extends HomectlPlugin<Config> {
     const [integration, ...fwdPath] = path.split('/')
 
     const instance = this.integrationInstances[integration]
-    if (!instance) return this.log(`no integration loaded with name ${integration}, dropping message: ${path} ${payload}`)
+    if (!instance) return this.log(`No integration loaded with name ${integration}, dropping message: ${path} ${payload}`)
 
     return instance.handleMsg(fwdPath.join('/'), payload);
   }

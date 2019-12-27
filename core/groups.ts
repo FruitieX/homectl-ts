@@ -1,8 +1,8 @@
 import * as t from 'io-ts'
 import minimatch from 'minimatch';
 
-import { PluginProps, GroupsConfig, throwDecoder } from "./types";
-import { HomectlPlugin } from './plugins';
+import { PluginProps, GroupsConfig, throwDecoder } from "../types";
+import { HomectlPlugin } from '../plugins';
 
 const Config = GroupsConfig
 type Config = t.TypeOf<typeof Config>

@@ -2,11 +2,13 @@ import Koa from 'koa'
 import * as t from 'io-ts'
 
 import { loadConfig } from './config';
-import IntegrationsPlugin from './integrations';
 import { HomectlPlugin } from './plugins';
-import ScenesPlugin from './scenes';
 import { throwDecoder } from './types';
-import GroupsPlugin from './groups';
+
+import IntegrationsPlugin from './core/integrations';
+import ScenesPlugin from './core/scenes';
+import GroupsPlugin from './core/groups';
+import RoutinesPlugin from './core/routines';
 
 const app = new Koa();
 
@@ -40,6 +42,7 @@ const init = async () => {
   subsystems.integrations = new IntegrationsPlugin({ id: "integrations", config: config.integrations, ...commonProps })
   subsystems.scenes = new ScenesPlugin({ id: "scenes", config: config.scenes, ...commonProps })
   subsystems.groups = new GroupsPlugin({ id: "groups", config: config.groups, ...commonProps })
+  subsystems.routines = new RoutinesPlugin({ id: "routines", config: config.routines, ...commonProps })
 
   for (const subsystemName in subsystems) {
     const subsystem = subsystems[subsystemName];

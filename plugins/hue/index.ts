@@ -1,14 +1,10 @@
 import * as t from 'io-ts'
-import { findFirst } from 'fp-ts/lib/Array'
 import axios, { Method } from 'axios'
 
-import { BridgeState, BridgeSceneSummary, BridgeSceneCreatedResponse } from "./types";
+import { BridgeState, BridgeSceneCreatedResponse, BridgeSensors } from "./types";
 import { PluginProps, throwDecoder } from "../../types";
 import { HomectlPlugin } from '../../plugins';
-import { pipe } from 'fp-ts/lib/pipeable';
-import { fold } from 'fp-ts/lib/Option';
-import { identity } from 'fp-ts/lib/function';
-import { findHomectlScene } from './utils';
+import { findHomectlScene, bridgeSensorsDiff } from './utils';
 
 const Config = t.type({
   addr: t.string,
@@ -24,6 +20,7 @@ type Config = t.TypeOf<typeof Config>
 
 export default class HuePlugin extends HomectlPlugin<Config> {
   homectlSceneId = '';
+  bridgeSensors: BridgeSensors = {};
 
   constructor(props: PluginProps<Config>) {
     super(props, Config);
@@ -31,7 +28,7 @@ export default class HuePlugin extends HomectlPlugin<Config> {
 
   async request<A>(decoder: t.Decoder<unknown, A>, url: string, method: Method = "GET", data?: unknown) {
     const baseURL = `http://${this.config.addr}/api/${this.config.username}`
-    this.log(`Making hue request to: ${url}`)
+    if (url !== '/sensors') this.log(`Making hue request to: ${url}`)
     const { data: response } = await axios({ url, baseURL, method, data })
     const decoded = throwDecoder(decoder)(response, `Unable to decode hue response from ${url}`)
     return decoded
@@ -41,6 +38,8 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     const bridgeState = await this.request(BridgeState, '/')
     this.log({ bridgeState })
 
+    this.bridgeSensors = bridgeState.sensors
+
     let homectlSceneId = findHomectlScene(bridgeState)
     if (!homectlSceneId) {
       const createdScene = await this.request(BridgeSceneCreatedResponse, '/scenes', 'POST', { lights: [], recycle: true, name: "homectl" })
@@ -49,12 +48,32 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     this.homectlSceneId = homectlSceneId
 
     this.log({ homectlSceneId })
+
+    // TODO: try doing without this first
     // poll scenes to be optimized every 10s with this.sendMsg(scenes/name), program into bridge if changed enough
   }
 
-  async handleMsg() {
+  start = async () => {
+    this.pollSwitches()
+  }
+
+  pollSwitches = async () => {
+    const newBridgeSensors = await this.request(BridgeSensors, '/sensors')
+    const sensorUpdates = bridgeSensorsDiff(this.id)(this.bridgeSensors, newBridgeSensors)
+    this.bridgeSensors = newBridgeSensors;
+
+    for (const update of sensorUpdates) {
+      await this.sendMsg('routines/valueChange', t.unknown, update)
+    }
+
+    setTimeout(this.pollSwitches, 100)
+  }
+
+  async handleMsg(path: string, payload: unknown) {
+    // TODO: try doing without this first
     // handle scene msg for optimized scenes by sending scene switch cmd to bridge
 
     // otherwise try programming new light states into a temp scene and switch to it?
+    this.log('handleMsg unimplemented', { path, payload })
   }
 }

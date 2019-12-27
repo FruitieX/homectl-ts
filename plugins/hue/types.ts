@@ -48,6 +48,7 @@ export const BridgeSensor = t.type({
 })
 
 export const BridgeSensors = t.record(t.string, BridgeSensor)
+export type BridgeSensors = t.TypeOf<typeof BridgeSensors>
 
 export const BridgeState = t.type({
   lights: BridgeLights,
@@ -55,3 +56,12 @@ export const BridgeState = t.type({
   sensors: BridgeSensors
 })
 export type BridgeState = t.TypeOf<typeof BridgeState>
+
+// export type BridgeRequest<A> = (decoder: t.Decoder<unknown, A>, url: string, method?: Method, data?: unknown) => Promise<A>
+
+export interface SensorEvent {
+  id: ButtonType;
+  value: unknown;
+}
+
+export type ButtonType = "on" | "dimUp" | "dimDown" | "off"

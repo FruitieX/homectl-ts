@@ -14,13 +14,14 @@ export const IntegrationsConfig = t.record(t.string, IntegrationConfig);
 export type IntegrationsConfig = t.TypeOf<typeof IntegrationsConfig>
 
 export const Condition = t.type({
-  value: t.string,
+  path: t.string,
   is: t.boolean
 })
 export const RoutineConfig = t.type({
   when: t.array(Condition),
   do: t.array(t.string)
 })
+export type RoutineConfig = t.TypeOf<typeof RoutineConfig>
 export const RoutinesConfig = t.record(t.string, RoutineConfig);
 export type RoutinesConfig = t.TypeOf<typeof RoutinesConfig>
 
@@ -71,3 +72,9 @@ export interface PluginProps<A> {
   appConfig: AppConfig,
   sendMsg: SendMsg
 }
+
+export const SensorUpdate = t.type({
+  path: t.string,
+  value: t.unknown,
+})
+export type SensorUpdate = t.TypeOf<typeof SensorUpdate>

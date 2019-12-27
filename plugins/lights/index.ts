@@ -1,7 +1,7 @@
 import * as t from 'io-ts'
 import { TinyColor } from '@ctrl/tinycolor'
 
-import { PluginProps, throwDecoder } from "../../types";
+import { PluginProps, throwDecoder, SceneConfig } from "../../types";
 import { HomectlPlugin } from '../../plugins';
 
 const Config = t.type({
@@ -47,18 +47,21 @@ export default class LightsPlugin extends HomectlPlugin<Config> {
     })
   }
 
-  activateScene(scene: string) {
+  async activateScene(sceneName: string) {
     // send scene switch msg to all lights in scene, get scene by sending scenes/somename msg
+    const scene = await this.sendMsg(`scenes/${sceneName}`, SceneConfig)
+
+    this.log(scene)
   }
 
   async handleMsg(path: string, payload: unknown) {
-    const [cmd, ...lightPath] = path.split('/')
-
-    const light = lightPath.join('/')
+    const cmd = path
 
     switch (cmd) {
       case 'activateScene': {
-        // this.activateScene();
+        const scene = throwDecoder(t.string)(payload, "Unable to decode activateScene payload")
+
+        this.activateScene(scene);
         break;
       }
       default: this.log(`Unknown cmd sent to lights integration: ${cmd}`)
