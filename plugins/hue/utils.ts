@@ -5,6 +5,7 @@ import { flatten } from 'ramda';
 
 import { BridgeState, BridgeSceneSummary, BridgeSensors, SensorEvent, ButtonType as ButtonId } from "./types";
 import { SensorUpdate } from '../../types';
+import tinycolor, { TinyColor } from '@ctrl/tinycolor';
 
 export const findHomectlScene = (bridgeState: BridgeState) =>
   pipe(
@@ -93,5 +94,26 @@ const getButtonState = (buttonevent: number): boolean => {
     case "2": return false // SHORT_RELEASED
     case "3": return false // LONG_RELEASED
     default: return true
+  }
+}
+
+export const tinycolorToHue = (color?: TinyColor) => {
+  if (!color) {
+    return {
+      hue: undefined,
+      sat: undefined,
+      bri: undefined
+    }
+  }
+
+  const hsv = color.toHsv()
+
+  return {
+    // tinycolor h value is in [0, 360[, Hue uses [0, 65536[
+    hue: Math.round((hsv.h / 360) * 65536),
+    // tinycolor s value is in [0, 100], Hue uses [0, 254]
+    sat: Math.round((hsv.s / 100) * 254),
+    // tinycolor v value is in [0, 100], Hue uses [1, 254]
+    bri: Math.round(hsv.v * 254)
   }
 }

@@ -1,12 +1,16 @@
 import * as t from 'io-ts'
 
+export const BridgeLightState = t.type({
+  on: t.boolean,
+  bri: t.union([t.number, t.undefined]),
+  hue: t.union([t.number, t.undefined]),
+  sat: t.union([t.number, t.undefined])
+})
+export type BridgeLightState = t.TypeOf<typeof BridgeLightState>
+export const BridgeLightStates = t.record(t.string, BridgeLightState)
+export type BridgeLightStates = t.TypeOf<typeof BridgeLightStates>
 export const BridgeLight = t.type({
-  state: t.type({
-    on: t.boolean,
-    bri: t.union([t.number, t.undefined]),
-    hue: t.union([t.number, t.undefined]),
-    sat: t.union([t.number, t.undefined])
-  }),
+  state: BridgeLightState,
   name: t.string
 })
 export type BridgeLight = t.TypeOf<typeof BridgeLight>

@@ -1,11 +1,16 @@
 import * as t from 'io-ts'
 import axios, { Method } from 'axios'
 
-import { BridgeState, BridgeSceneCreatedResponse, BridgeSensors, BridgeSensor, BridgeLights, BridgeLight } from "./types";
-import { PluginProps, throwDecoder } from "../../types";
+import { BridgeState, BridgeSceneCreatedResponse, BridgeSensors, BridgeSensor, BridgeLights, BridgeLight, BridgeLightState, BridgeLightStates } from "./types";
+import { PluginProps, throwDecoder, SceneCommand } from "../../types";
 import { HomectlPlugin } from '../../plugins';
-import { findHomectlScene, bridgeSensorsDiff } from './utils';
+import { findHomectlScene, bridgeSensorsDiff, tinycolorToHue } from './utils';
 import { map } from 'fp-ts/lib/Record';
+import { findIndex } from 'ramda';
+import { findFirst } from 'fp-ts/lib/Array';
+import { pipe } from 'fp-ts/lib/pipeable';
+import { fold } from 'fp-ts/lib/Option';
+import tinycolor from '@ctrl/tinycolor';
 
 const Config = t.type({
   addr: t.string,
@@ -82,6 +87,38 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     // handle scene msg for optimized scenes by sending scene switch cmd to bridge
 
     // otherwise try programming new light states into a temp scene and switch to it?
-    this.log('handleMsg unimplemented', { path, payload })
+    const cmds = throwDecoder(t.array(SceneCommand))(payload, "Unable to decode batch light update")
+
+    const lightstates: BridgeLightStates = {}
+
+    for (const cmd of cmds) {
+      const lightId = pipe(
+        findFirst(([id, light]: [string, BridgeLight]) => cmd.path.endsWith(`/${light.name}`))(Object.entries(this.bridgeLights)),
+        fold(() => undefined, (([key]) => key))
+      )
+
+      if (!lightId) {
+        this.log(`Cannot find lightId for path ${cmd.path}`)
+        continue
+      }
+
+      const hueColors = tinycolorToHue(tinycolor(cmd.color))
+
+      lightstates[lightId] = {
+        on: cmd.power,
+        ...hueColors
+      }
+    }
+
+    const body = {
+      lights: Object.keys(lightstates),
+      lightstates
+    }
+
+    this.log('updating scene')
+    await this.request(t.unknown, `/scenes/${this.homectlSceneId}`, 'PUT', body)
+    this.log('activating scene')
+    await this.request(t.unknown, `/groups/0/action`, 'PUT', { scene: this.homectlSceneId })
+    this.log('activated scene')
   }
 }
