@@ -10,6 +10,7 @@ interface Sensors {
   [path: string]: unknown
 }
 
+// TODO: split into sensors & routines?
 /**
  * Routines plugin
  * 
@@ -67,6 +68,11 @@ export default class RoutinesPlugin extends HomectlPlugin<Config> {
           await this.sendMsg(path, t.unknown, payload)
         }
       }
+    }
+
+    this.knownSensors = {
+      ...this.knownSensors,
+      [sensorUpdate.path]: sensorUpdate.value
     }
   }
 
