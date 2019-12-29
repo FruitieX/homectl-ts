@@ -115,7 +115,7 @@ export default class HuePlugin extends HomectlPlugin<Config> {
       lightstates
     }
 
-    this.log('updating scene')
+    this.log('updating scene', { body })
     await this.request(t.unknown, `/scenes/${this.homectlSceneId}`, 'PUT', body)
     this.log('activating scene')
     await this.request(t.unknown, `/groups/0/action`, 'PUT', { scene: this.homectlSceneId })

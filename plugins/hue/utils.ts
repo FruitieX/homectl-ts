@@ -111,9 +111,9 @@ export const tinycolorToHue = (color?: TinyColor) => {
   return {
     // tinycolor h value is in [0, 360[, Hue uses [0, 65536[
     hue: Math.round((hsv.h / 360) * 65536),
-    // tinycolor s value is in [0, 100], Hue uses [0, 254]
-    sat: Math.round((hsv.s / 100) * 254),
-    // tinycolor v value is in [0, 100], Hue uses [1, 254]
+    // tinycolor s value is in [0, 1], Hue uses [0, 254]
+    sat: Math.round(hsv.s * 254),
+    // tinycolor v value is in [0, 1], Hue uses [1, 254]
     bri: Math.round(hsv.v * 254)
   }
 }

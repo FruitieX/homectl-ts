@@ -2,7 +2,7 @@ import * as t from 'io-ts'
 
 import { PluginProps, ScenesConfig, SceneCommand, GroupConfig, throwDecoder } from "../types";
 import { HomectlPlugin } from '../plugins';
-import { groupBy } from 'fp-ts/lib/NonEmptyArray';
+import tinycolor from '@ctrl/tinycolor';
 
 const Config = ScenesConfig
 type Config = t.TypeOf<typeof Config>
@@ -60,14 +60,13 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
   async expandPath(path: string) {
     if (!path.startsWith('groups/')) return [path]
 
-    const groupConfig = await this.sendMsg(path, GroupConfig);
-    const devices = groupConfig.devices
+    const devices = await this.sendMsg(path, t.array(t.string));
 
     return devices
   }
 
   async getDynamicProps(props: { [key: string]: unknown }) {
-    const dynamicProps: { [key: string]: string } = {}
+    const dynamicProps: { [key: string]: unknown } = {}
 
     const blacklist = ['path']
 
@@ -78,9 +77,13 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
 
       if (typeof value === 'string' && value.startsWith('integrations/')) {
         const path = value
-        // FIXME: only supports string values right now
-        const dynamicValue = await this.sendMsg(path, t.string)
-        dynamicProps[key] = dynamicValue
+        dynamicProps[key] = await this.sendMsg(path, t.string)
+      } else if (typeof value === 'string') {
+        // try parsing value with TinyColor
+        const color = tinycolor(value)
+        if (color.isValid) {
+          dynamicProps[key] = color.toHsvString()
+        }
       }
     }
 

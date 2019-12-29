@@ -41,8 +41,14 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     this.app.on('registerDevice', (msg: unknown) => {
       const path = throwDecoder(t.string)(msg, "Unable to decode registerDevice message")
 
+      // don't handle already known devices
+      if (path.startsWith('devices/')) return
+
       this.knownDevices.push(path)
       this.log(`Discovered device "${path}"`)
+
+      const [subsystem, ...fwdPath] = path.split('/')
+      this.app.emit('registerDevice', `devices/${fwdPath.join('/')}`)
     })
   }
 
@@ -54,6 +60,8 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
       this.log(`No scene found with name ${sceneName}`)
       return
     }
+
+    this.log(`Activating scene ${sceneName}`)
 
     const groupedSceneCmds = groupBy((cmd: SceneCommand) => {
       const [subsystem, plugin] = cmd.path.split('/')

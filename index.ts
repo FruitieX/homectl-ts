@@ -28,7 +28,10 @@ const init = async () => {
     if (!instance) throw new Error(`No subsystem loaded with name ${subsystem}, dropping message: ${path} ${payload}`)
 
     const fwdPath = splitFwdPath.join('/')
+
     const retVal = await instance.handleMsg(fwdPath, payload);
+
+    console.log('sendMsg', { path, payload, retVal })
 
     const decoded = throwDecoder(decoder)(retVal, `Unable to decode return value of ${fwdPath} ${payload}`)
     return decoded
