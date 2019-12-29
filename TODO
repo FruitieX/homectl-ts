@@ -1,0 +1,6 @@
+TODO list
+
+- adjustable brightness support
+- concept of active scene (handled by devices?)
+- poll active scene for changes, apply any changes to lights
+- scene cycling support
