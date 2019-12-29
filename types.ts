@@ -2,7 +2,6 @@ import Koa from 'koa'
 import * as t from 'io-ts'
 import { pipe } from 'fp-ts/lib/pipeable';
 import { fold, left } from 'fp-ts/lib/Either';
-import { PathReporter } from 'io-ts/lib/PathReporter';
 import { identity } from 'fp-ts/lib/function';
 import { reporter } from 'io-ts-reporters'
 
@@ -32,12 +31,19 @@ export const GroupConfig = t.type({
 export const GroupsConfig = t.record(t.string, GroupConfig);
 export type GroupsConfig = t.TypeOf<typeof GroupsConfig>
 
-export const SceneCommand = t.type({
-  path: t.string,
+export const DeviceCommand = t.type({
   power: t.boolean,
   color: t.union([t.string, t.undefined]),
   brightness: t.union([t.number, t.undefined])
 })
+export type DeviceCommand = t.TypeOf<typeof DeviceCommand>
+
+export const SceneCommand = t.intersection([
+  DeviceCommand,
+  t.type({
+    path: t.string,
+  })
+])
 export type SceneCommand = t.TypeOf<typeof SceneCommand>
 export const SceneConfig = t.type({
   name: t.string,
@@ -46,11 +52,14 @@ export const SceneConfig = t.type({
 export const ScenesConfig = t.record(t.string, SceneConfig);
 export type ScenesConfig = t.TypeOf<typeof ScenesConfig>
 
+// export const DevicesConfig = t.type({})
+
 export const AppConfig = t.type({
   integrations: IntegrationsConfig,
   routines: RoutinesConfig,
   groups: GroupsConfig,
   scenes: ScenesConfig,
+  // devices: DevicesConfig,
 })
 export type AppConfig = t.TypeOf<typeof AppConfig>
 
@@ -59,8 +68,7 @@ export const throwDecoder = <A>(decoder: t.Decoder<unknown, A>) => (value: unkno
     decoder.decode(value),
     fold(e => {
       console.error(msg)
-      console.log(JSON.stringify(reporter(left(e))))
-      process.exit(1)
+      throw new Error(JSON.stringify(reporter(left(e))))
     }, identity)
   )
 

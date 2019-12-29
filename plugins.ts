@@ -35,7 +35,7 @@ export abstract class HomectlPlugin<A> {
   /**
    * Called upon initial integration registration.
    */
-  abstract async register(): Promise<void>
+  async register() { }
 
   /**
    * Called when all integrations have been loaded

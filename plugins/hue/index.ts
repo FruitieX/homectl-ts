@@ -1,10 +1,11 @@
 import * as t from 'io-ts'
 import axios, { Method } from 'axios'
 
-import { BridgeState, BridgeSceneCreatedResponse, BridgeSensors } from "./types";
+import { BridgeState, BridgeSceneCreatedResponse, BridgeSensors, BridgeSensor, BridgeLights, BridgeLight } from "./types";
 import { PluginProps, throwDecoder } from "../../types";
 import { HomectlPlugin } from '../../plugins';
 import { findHomectlScene, bridgeSensorsDiff } from './utils';
+import { map } from 'fp-ts/lib/Record';
 
 const Config = t.type({
   addr: t.string,
@@ -21,6 +22,7 @@ type Config = t.TypeOf<typeof Config>
 export default class HuePlugin extends HomectlPlugin<Config> {
   homectlSceneId = '';
   bridgeSensors: BridgeSensors = {};
+  bridgeLights: BridgeLights = {};
 
   constructor(props: PluginProps<Config>) {
     super(props, Config);
@@ -38,6 +40,7 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     const bridgeState = await this.request(BridgeState, '/')
     this.log({ bridgeState })
 
+    this.bridgeLights = bridgeState.lights
     this.bridgeSensors = bridgeState.sensors
 
     let homectlSceneId = findHomectlScene(bridgeState)
@@ -54,6 +57,11 @@ export default class HuePlugin extends HomectlPlugin<Config> {
   }
 
   start = async () => {
+    map((light: BridgeLight) => this.app.emit('registerDevice', `integrations/${this.id}/${light.name}`))(this.bridgeLights)
+    map((sensor: BridgeSensor) => {
+      if (sensor.type !== "ZLLSwitch") return
+      ['on', 'dimUp', 'dimDown', 'off'].map(button => this.app.emit('registerSensor', `integrations/${this.id}/${sensor.name}/${button}`))
+    })(this.bridgeSensors)
     this.pollSwitches()
   }
 

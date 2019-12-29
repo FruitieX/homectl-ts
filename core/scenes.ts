@@ -1,7 +1,8 @@
 import * as t from 'io-ts'
 
-import { PluginProps, ScenesConfig, SceneCommand, GroupConfig } from "../types";
+import { PluginProps, ScenesConfig, SceneCommand, GroupConfig, throwDecoder } from "../types";
 import { HomectlPlugin } from '../plugins';
+import { groupBy } from 'fp-ts/lib/NonEmptyArray';
 
 const Config = ScenesConfig
 type Config = t.TypeOf<typeof Config>
@@ -23,11 +24,22 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
     this.scenes = this.config
   }
 
-  async handleMsg(path: string, payload: unknown) {
-    const sceneName = path
+  async handleMsg(path: string, payload: unknown): Promise<Array<SceneCommand> | void> {
+    const cmd = path
 
+    switch (cmd) {
+      case 'getScene': {
+        const sceneName = throwDecoder(t.string)(payload, 'Unable to decode scene name')
+        return await this.getScene(sceneName)
+      }
+      default:
+        this.log(`Unknown command received: ${cmd}`)
+    }
+  }
+
+  async getScene(sceneName: string): Promise<Array<SceneCommand> | undefined> {
     const scene = this.scenes[sceneName]
-    if (!scene) return this.log(`No scene found with name ${sceneName}, dropping message: ${path} ${payload}`)
+    if (!scene) return
 
     const sceneCommands: Array<SceneCommand> = []
 
@@ -57,7 +69,11 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
   async getDynamicProps(props: { [key: string]: unknown }) {
     const dynamicProps: { [key: string]: string } = {}
 
+    const blacklist = ['path']
+
     for (const key in props) {
+      if (blacklist.includes(key)) continue;
+
       const value = props[key]
 
       if (typeof value === 'string' && value.startsWith('integrations/')) {

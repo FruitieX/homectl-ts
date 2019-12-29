@@ -9,7 +9,9 @@ export const BridgeLight = t.type({
   }),
   name: t.string
 })
+export type BridgeLight = t.TypeOf<typeof BridgeLight>
 export const BridgeLights = t.record(t.string, BridgeLight);
+export type BridgeLights = t.TypeOf<typeof BridgeLights>
 
 export const BridgeSceneSummary = t.type({
   name: t.string
@@ -44,8 +46,8 @@ export const BridgeSensor = t.type({
   }),
   name: t.string,
   type: t.string,
-
 })
+export type BridgeSensor = t.TypeOf<typeof BridgeSensor>
 
 export const BridgeSensors = t.record(t.string, BridgeSensor)
 export type BridgeSensors = t.TypeOf<typeof BridgeSensors>

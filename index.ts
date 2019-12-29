@@ -9,6 +9,7 @@ import IntegrationsPlugin from './core/integrations';
 import ScenesPlugin from './core/scenes';
 import GroupsPlugin from './core/groups';
 import RoutinesPlugin from './core/routines';
+import DevicesPlugin from './core/devices';
 
 const app = new Koa();
 
@@ -40,6 +41,7 @@ const init = async () => {
   }
 
   subsystems.integrations = new IntegrationsPlugin({ id: "integrations", config: config.integrations, ...commonProps })
+  subsystems.devices = new DevicesPlugin({ id: "devices", config: {}, ...commonProps })
   subsystems.scenes = new ScenesPlugin({ id: "scenes", config: config.scenes, ...commonProps })
   subsystems.groups = new GroupsPlugin({ id: "groups", config: config.groups, ...commonProps })
   subsystems.routines = new RoutinesPlugin({ id: "routines", config: config.routines, ...commonProps })

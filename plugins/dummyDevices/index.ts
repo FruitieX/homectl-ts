@@ -49,7 +49,7 @@ export default class DummyDevicesPlugin extends HomectlPlugin<Config> {
 
       // lights can register with the lights plugin if available
       if (this.config.lights) {
-        this.app.emit('registerLight', `${this.id}/${device}`)
+        this.app.emit('registerDevice', `${this.id}/${device}`)
       }
     }
   }

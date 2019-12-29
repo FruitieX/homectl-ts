@@ -26,6 +26,12 @@ export default class RoutinesPlugin extends HomectlPlugin<Config> {
 
   async register() {
     this.routines = this.config
+
+    this.app.on('registerSensor', (msg: unknown) => {
+      const sensorId = throwDecoder(t.string)(msg, "Unable to decode registerSensor message")
+      this.knownSensors[sensorId] = false
+      this.log(`Discovered sensor "${sensorId}"`)
+    })
   }
 
   async handleMsg(path: string, payload: unknown) {
@@ -80,7 +86,7 @@ export default class RoutinesPlugin extends HomectlPlugin<Config> {
   isRoutineTriggered(sensors: Sensors, routine: RoutineConfig) {
     for (const condition of routine.when) {
       const sensor = sensors[condition.path]
-      if (!sensor) {
+      if (sensor === undefined) {
         this.log(`Unknown sensor with path ${condition.path}`)
         return false
       }
