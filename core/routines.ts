@@ -64,8 +64,8 @@ export default class RoutinesPlugin extends HomectlPlugin<Config> {
       if (!wasTriggered && wouldBeTriggered) {
         this.log(`Triggering routine ${routineName}`)
         for (const action of routine.do) {
-          const [path, payload] = action.split(' ')
-          await this.sendMsg(path, t.unknown, payload)
+          const [path, ...payload] = action.split(' ')
+          await this.sendMsg(path, t.unknown, payload.length === 1 ? payload[0] : payload)
         }
       }
     }
