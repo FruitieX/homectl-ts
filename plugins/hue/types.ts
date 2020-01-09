@@ -4,7 +4,8 @@ export const BridgeLightState = t.type({
   on: t.boolean,
   bri: t.union([t.number, t.undefined]),
   hue: t.union([t.number, t.undefined]),
-  sat: t.union([t.number, t.undefined])
+  sat: t.union([t.number, t.undefined]),
+  transitiontime: t.union([t.number, t.undefined]),
 })
 export type BridgeLightState = t.TypeOf<typeof BridgeLightState>
 export const BridgeLightStates = t.record(t.string, BridgeLightState)
@@ -24,24 +25,6 @@ export type BridgeSceneSummary = t.TypeOf<typeof BridgeSceneSummary>
 export const BridgeScenesSummary = t.record(t.string, BridgeSceneSummary);
 
 export const BridgeSceneCreatedResponse = t.tuple([t.type({ success: t.type({ id: t.string }) })])
-
-// maybe we can do without the rules?
-// export const BridgeRuleCondition = t.type({
-//   address: t.string,
-//   operator: t.string,
-//   value: t.string
-// })
-// export const BridgeRuleAction = t.type({
-//   address: t.string,
-//   method: t.string,
-//   body: t.unknown
-// })
-// export const BridgeRule = t.type({
-//   name: t.string,
-//   conditions: t.array(BridgeRuleCondition),
-//   actions: t.array(BridgeRuleAction),
-// })
-// export const BridgeRules = t.record(t.string, BridgeRule);
 
 export const BridgeSensor = t.type({
   state: t.type({

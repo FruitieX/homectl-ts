@@ -4,7 +4,7 @@ import { fold } from 'fp-ts/lib/Option';
 import { flatten } from 'ramda';
 
 import { BridgeState, BridgeSceneSummary, BridgeSensors, SensorEvent, ButtonType as ButtonId } from "./types";
-import { SensorUpdate } from '../../types';
+import { SensorUpdate, DeviceCommand } from '../../types';
 import tinycolor, { TinyColor } from '@ctrl/tinycolor';
 
 export const findHomectlScene = (bridgeState: BridgeState) =>
@@ -97,7 +97,7 @@ const getButtonState = (buttonevent: number): boolean => {
   }
 }
 
-export const tinycolorToHue = (color?: TinyColor) => {
+export const tinycolorToHue = (color?: TinyColor, brightness = 1) => {
   if (!color) {
     return {
       hue: undefined,
@@ -114,6 +114,18 @@ export const tinycolorToHue = (color?: TinyColor) => {
     // tinycolor s value is in [0, 1], Hue uses [0, 254]
     sat: Math.round(hsv.s * 254),
     // tinycolor v value is in [0, 1], Hue uses [1, 254]
-    bri: Math.round(hsv.v * 254)
+    bri: Math.round(hsv.v * 254 * brightness)
+  }
+}
+
+export const sceneCmdToHue = (cmd: DeviceCommand) => {
+  const hueColors = tinycolorToHue(tinycolor(cmd.color), cmd.brightness)
+
+  return {
+    // We consider zero brightness to be off, Hue does not
+    on: cmd.power && hueColors.bri !== 0,
+    // We use milliseconds, Hue uses 1/100 seconds
+    transitiontime: cmd.transition ? Math.round(cmd.transition / 100) : undefined,
+    ...hueColors,
   }
 }
