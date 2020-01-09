@@ -1,19 +1,21 @@
 import * as t from 'io-ts'
-import { TinyColor } from '@ctrl/tinycolor'
 
-import { PluginProps, throwDecoder, SceneCommand } from "../types";
+import { PluginProps, throwDecoder, DeviceCommand, DeviceCommands } from "../types";
 import { HomectlPlugin } from '../plugins';
 import { groupBy } from 'fp-ts/lib/NonEmptyArray';
+import tinycolor from '@ctrl/tinycolor';
 
 const Config = t.type({
-
 })
 type Config = t.TypeOf<typeof Config>
 
 interface DeviceState {
   power: boolean;
-  color?: TinyColor
+  color?: string;
   brightness?: number;
+  scene?: string;
+  sceneActivationTime?: number;
+  transition?: number;
 }
 
 interface State {
@@ -54,7 +56,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
 
   async activateScene(sceneName: string) {
     // send scene switch msg to all devices in scene, get scene by sending scenes/somename msg
-    const scene = await this.sendMsg(`scenes/getScene`, t.array(SceneCommand), sceneName)
+    const scene = await this.sendMsg(`scenes/getScene`, DeviceCommands, sceneName)
 
     if (!scene) {
       this.log(`No scene found with name ${sceneName}`)
@@ -62,8 +64,21 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     }
 
     this.log(`Activating scene ${sceneName}`)
+    this.applyDeviceCmds(scene)
+  }
 
-    const groupedSceneCmds = groupBy((cmd: SceneCommand) => {
+  async applyDeviceCmds(scene: DeviceCommands) {
+    for (const cmd of scene) {
+      this.state.devices[cmd.path] = {
+        ...this.state.devices[cmd.path],
+        brightness: 1, // reset brightness to 1 unless scene specifies otherwise
+        transition: 500,
+        sceneActivationTime: Date.now(),
+        ...cmd
+      }
+    }
+
+    const groupedSceneCmds = groupBy((cmd: DeviceCommand) => {
       const [subsystem, plugin] = cmd.path.split('/')
       return `${subsystem}/${plugin}`;
     })(scene)
@@ -72,6 +87,10 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
       const group = groupedSceneCmds[path]
       this.sendMsg(path, t.unknown, group)
     }
+  }
+
+  async adjustBrightness(path: string, rate: number) {
+
   }
 
   async handleMsg(path: string, payload: unknown) {
@@ -83,6 +102,12 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
 
         this.activateScene(scene);
         break;
+      }
+      case 'adjustBrightness': {
+        const cmd = throwDecoder(t.tuple([t.string, t.string]))(payload, "Unable to decode adjustBrightness payload")
+        const [path, rate] = cmd
+
+        this.adjustBrightness(path, parseFloat(rate))
       }
       // relay unknown commands to integrations/*
       default: await this.sendMsg(`integrations/${path}`, t.unknown, payload)

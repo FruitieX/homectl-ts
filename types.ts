@@ -32,22 +32,18 @@ export const GroupsConfig = t.record(t.string, GroupConfig);
 export type GroupsConfig = t.TypeOf<typeof GroupsConfig>
 
 export const DeviceCommand = t.type({
+  path: t.string,
   power: t.boolean,
   color: t.union([t.string, t.undefined]),
+  transition: t.union([t.number, t.undefined]),
   brightness: t.union([t.number, t.undefined])
 })
 export type DeviceCommand = t.TypeOf<typeof DeviceCommand>
-
-export const SceneCommand = t.intersection([
-  DeviceCommand,
-  t.type({
-    path: t.string,
-  })
-])
-export type SceneCommand = t.TypeOf<typeof SceneCommand>
+export const DeviceCommands = t.array(DeviceCommand)
+export type DeviceCommands = t.TypeOf<typeof DeviceCommands>
 export const SceneConfig = t.type({
   name: t.string,
-  devices: t.array(SceneCommand)
+  devices: t.array(DeviceCommand)
 })
 export const ScenesConfig = t.record(t.string, SceneConfig);
 export type ScenesConfig = t.TypeOf<typeof ScenesConfig>

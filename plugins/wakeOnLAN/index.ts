@@ -1,7 +1,7 @@
 import * as t from 'io-ts'
 import wol from 'wake_on_lan'
 
-import { PluginProps, throwDecoder, DeviceCommand, SceneCommand } from "../../types";
+import { PluginProps, throwDecoder, DeviceCommand } from "../../types";
 import { HomectlPlugin } from '../../plugins';
 import { lookup } from 'fp-ts/lib/Record';
 import { fold } from 'fp-ts/lib/Option';
@@ -43,7 +43,7 @@ export default class WakeOnLANPlugin extends HomectlPlugin<Config> {
   }
 
   async handleMsg(path: string, payload: unknown) {
-    const cmds = throwDecoder(t.array(SceneCommand))(payload, "Unable to decode wakeOnLAN payload")
+    const cmds = throwDecoder(t.array(DeviceCommand))(payload, "Unable to decode wakeOnLAN payload")
 
     for (const cmd of cmds) {
       const [, , name] = cmd.path.split('/')
