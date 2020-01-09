@@ -2,9 +2,9 @@ import * as t from 'io-ts'
 import axios, { Method } from 'axios'
 
 import { BridgeState, BridgeSceneCreatedResponse, BridgeSensors, BridgeSensor, BridgeLights, BridgeLight, BridgeLightState, BridgeLightStates } from "./types";
-import { PluginProps, throwDecoder, SceneCommand } from "../../types";
+import { PluginProps, throwDecoder, DeviceCommand } from "../../types";
 import { HomectlPlugin } from '../../plugins';
-import { findHomectlScene, bridgeSensorsDiff, tinycolorToHue } from './utils';
+import { findHomectlScene, bridgeSensorsDiff, tinycolorToHue, sceneCmdToHue } from './utils';
 import { map } from 'fp-ts/lib/Record';
 import { findIndex } from 'ramda';
 import { findFirst } from 'fp-ts/lib/Array';
@@ -56,9 +56,6 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     this.homectlSceneId = homectlSceneId
 
     this.log({ homectlSceneId })
-
-    // TODO: try doing without this first
-    // poll scenes to be optimized every 10s with this.sendMsg(scenes/name), program into bridge if changed enough
   }
 
   start = async () => {
@@ -83,11 +80,7 @@ export default class HuePlugin extends HomectlPlugin<Config> {
   }
 
   async handleMsg(path: string, payload: unknown) {
-    // TODO: try doing without this first
-    // handle scene msg for optimized scenes by sending scene switch cmd to bridge
-
-    // otherwise try programming new light states into a temp scene and switch to it?
-    const cmds = throwDecoder(t.array(SceneCommand))(payload, "Unable to decode batch light update")
+    const cmds = throwDecoder(t.array(DeviceCommand))(payload, "Unable to decode batch light update")
 
     const lightstates: BridgeLightStates = {}
 
@@ -102,23 +95,38 @@ export default class HuePlugin extends HomectlPlugin<Config> {
         continue
       }
 
-      const hueColors = tinycolorToHue(tinycolor(cmd.color))
-
-      lightstates[lightId] = {
-        on: cmd.power,
-        ...hueColors
-      }
+      lightstates[lightId] = sceneCmdToHue(cmd)
     }
 
-    const body = {
-      lights: Object.keys(lightstates),
-      lightstates
+    // loop through lightstates and send one request per lightstate update to the bridge
+    // this sort of breaks down with large numbers of lights
+
+    for (const lightId in lightstates) {
+      const lightstate = lightstates[lightId]
+      await this.request(t.unknown, `/lights/${lightId}/state`, 'PUT', lightstate)
     }
 
-    this.log('updating scene', { body })
-    await this.request(t.unknown, `/scenes/${this.homectlSceneId}`, 'PUT', body)
-    this.log('activating scene')
-    await this.request(t.unknown, `/groups/0/action`, 'PUT', { scene: this.homectlSceneId })
-    this.log('activated scene')
+    // TODO: find some way of batch updating lights, for example store common scenes in
+    // the bridge so we can switch to those with one request
+
+    // idea 1: find identical lightstates and create bridge groups for those,
+    // future updates to these lights can now get by with 1 request
+    // TODO: use group 0 if lightstates contains all bridge lights
+
+    // idea 2: store commonly used scenes in the bridge, update these periodically (if they contain changes)
+
+    // idea 3: program the lightstate changes into a scene and switch to that scene instantly
+    // (turns out this doesn't work very well)
+
+    // const body = {
+    //   lights: Object.keys(lightstates),
+    //   lightstates
+    // }
+    // 
+    // this.log('updating scene', { body })
+    // await this.request(t.unknown, `/scenes/${this.homectlSceneId}`, 'PUT', body)
+    // this.log('activating scene')
+    // await this.request(t.unknown, `/groups/0/action`, 'PUT', { scene: this.homectlSceneId })
+    // this.log('activated scene')
   }
 }
