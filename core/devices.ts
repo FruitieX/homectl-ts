@@ -19,7 +19,7 @@ interface DeviceState {
 }
 
 interface State {
-  devices: { [deviceId: string]: DeviceState }
+  devices: { [deviceId: string]: DeviceState | undefined }
 }
 
 /**
@@ -64,16 +64,21 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     }
 
     this.log(`Activating scene ${sceneName}`)
-    this.applyDeviceCmds(scene)
+    this.applyDeviceCmds(scene, sceneName)
   }
 
-  async applyDeviceCmds(scene: DeviceCommands) {
-    for (const cmd of scene) {
+  async applyDeviceCmds(cmds: DeviceCommands, sceneName?: string) {
+    for (const cmd of cmds) {
+      const sceneProps = sceneName === undefined ? {} : {
+        scene: sceneName,
+        sceneActivationTime: Date.now(),
+        brightness: 1, // reset brightness to 1 unless scene specifies otherwise
+      }
+
       this.state.devices[cmd.path] = {
         ...this.state.devices[cmd.path],
-        brightness: 1, // reset brightness to 1 unless scene specifies otherwise
-        transition: 500,
-        sceneActivationTime: Date.now(),
+        transition: 500, // default transition time, cmd can override
+        ...sceneProps,
         ...cmd
       }
     }
@@ -81,7 +86,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     const groupedSceneCmds = groupBy((cmd: DeviceCommand) => {
       const [subsystem, plugin] = cmd.path.split('/')
       return `${subsystem}/${plugin}`;
-    })(scene)
+    })(cmds)
 
     for (const path in groupedSceneCmds) {
       const group = groupedSceneCmds[path]
@@ -89,8 +94,25 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     }
   }
 
-  async adjustBrightness(path: string, rate: number) {
+  async adjustBrightness(unexpandedPath: string, rate: number) {
+    const paths = await this.expandPath(unexpandedPath)
 
+    const cmds: DeviceCommands = paths.map(path => {
+      const prevState = this.state.devices[path];
+      const cmd = { path, brightness: 1, ...(prevState as DeviceCommand), transition: 1000 }
+
+      return { ...cmd, brightness: Math.min(2, Math.max(0, (cmd.brightness ?? 1) + rate)) }
+    })
+
+    await this.applyDeviceCmds(cmds)
+  }
+
+  async expandPath(path: string) {
+    if (!path.startsWith('groups/')) return [path]
+
+    const devices = await this.sendMsg(path, t.array(t.string));
+
+    return devices
   }
 
   async handleMsg(path: string, payload: unknown) {
@@ -108,6 +130,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
         const [path, rate] = cmd
 
         this.adjustBrightness(path, parseFloat(rate))
+        break;
       }
       // relay unknown commands to integrations/*
       default: await this.sendMsg(`integrations/${path}`, t.unknown, payload)
