@@ -1,14 +1,7 @@
 import * as t from 'io-ts'
-import axios, { Method } from 'axios'
 
 import { PluginProps, throwDecoder, DeviceCommand } from "../../types";
 import { HomectlPlugin } from '../../plugins';
-import { map } from 'fp-ts/lib/Record';
-import { findIndex } from 'ramda';
-import { findFirst } from 'fp-ts/lib/Array';
-import { pipe } from 'fp-ts/lib/pipeable';
-import { fold } from 'fp-ts/lib/Option';
-import tinycolor from '@ctrl/tinycolor';
 import { LifxServer } from './server';
 import { LifxDevice } from './types';
 
