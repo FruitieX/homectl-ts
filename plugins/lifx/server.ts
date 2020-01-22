@@ -3,7 +3,7 @@ import dgram from 'dgram'
 import { getBroadcastAddr } from './utils'
 import { DiscoverCallback } from './types'
 import { DeviceCommand } from '../../types'
-import { TinyColor } from '@ctrl/tinycolor'
+import tinycolor, { TinyColor } from '@ctrl/tinycolor'
 
 const lifxPort = 56700
 
@@ -51,16 +51,25 @@ export class LifxServer {
     this.server.send(this.buildMsg(23), lifxPort, this.broadcastAddr)
   }
 
-  setLightColor = (ip: string, color: TinyColor, brightness = 1, transition = 500) => {
-    const payload = Buffer.alloc(8 + 16 * 4 + 32)
+  setLightColor = (ip: string, cmd: DeviceCommand) => {
+    const color = tinycolor(cmd.color)
+
+    const { brightness = 1, transition = 500, power } = cmd
     const hsv = color.toHsv();
-    console.log(hsv)
-    payload.writeUInt16LE(Math.floor(hsv.h / 360 * 65535), 1)
-    payload.writeUInt16LE(Math.floor(hsv.s / 100 * 65535), 3)
-    payload.writeUInt16LE(Math.floor(hsv.v / 100 * brightness * 65535), 5)
-    payload.writeUInt16LE(6500, 7)
-    payload.writeUInt32LE(transition, 9)
-    this.server.send(this.buildMsg(102, payload), lifxPort, ip)
+
+    const setPowerPayload = Buffer.alloc(16 + 32);
+    setPowerPayload.writeUInt16LE(power ? 65535 : 0, 0)
+    setPowerPayload.writeUInt16LE(transition, 2)
+    this.server.send(this.buildMsg(117, setPowerPayload), lifxPort, ip)
+
+    if (!power) return
+    const setColorPayload = Buffer.alloc(8 + 16 * 4 + 32)
+    setColorPayload.writeUInt16LE(Math.floor(hsv.h / 360 * 65535), 1)
+    setColorPayload.writeUInt16LE(Math.floor(hsv.s * 65535), 3)
+    setColorPayload.writeUInt16LE(Math.floor(hsv.v * brightness * 65535), 5)
+    setColorPayload.writeUInt16LE(6500, 7)
+    setColorPayload.writeUInt32LE(transition, 9)
+    this.server.send(this.buildMsg(102, setColorPayload), lifxPort, ip)
   }
 
   buildMsg = (type: number, payload?: Buffer) => {

@@ -53,8 +53,7 @@ export default class LifxPlugin extends HomectlPlugin<Config> {
 
       if (!device) { return console.error(`Cannot find lifx device with label ${label}!`) }
 
-      this.server.setLightColor(device.ip, tinycolor(cmd.color), cmd.brightness, cmd.transition)
-      console.log(cmd);
+      this.server.setLightColor(device.ip, cmd)
     }
   }
 }
