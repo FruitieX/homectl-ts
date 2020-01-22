@@ -94,6 +94,8 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     }
   }
 
+  // TODO: this doesn't handle canceling the transition when releasing the dimmer button
+  // and always drops the brightness by given rate
   async adjustBrightness(unexpandedPath: string, rate: number) {
     const paths = await this.expandPath(unexpandedPath)
 

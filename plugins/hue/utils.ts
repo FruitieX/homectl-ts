@@ -122,8 +122,7 @@ export const sceneCmdToHue = (cmd: DeviceCommand) => {
   const hueColors = tinycolorToHue(tinycolor(cmd.color), cmd.brightness)
 
   return {
-    // We consider zero brightness to be off, Hue does not
-    on: cmd.power && hueColors.bri !== 0,
+    on: cmd.power,
     // We use milliseconds, Hue uses 1/100 seconds
     transitiontime: cmd.transition ? Math.round(cmd.transition / 100) : undefined,
     ...hueColors,
