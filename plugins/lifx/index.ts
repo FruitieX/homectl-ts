@@ -32,8 +32,10 @@ export default class LifxPlugin extends HomectlPlugin<Config> {
 
   start = async () => {
     this.server.discover(device => {
+      if (!this.devices[device.label]) {
+        this.app.emit('registerDevice', `integrations/${this.id}/${device.label}`)
+      }
       this.devices[device.label] = device
-      this.app.emit('registerDevice', `integrations/${this.id}/${device.label}`)
     })
   }
 

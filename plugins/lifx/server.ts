@@ -22,16 +22,30 @@ export class LifxServer {
       const payload = msg.slice(36)
 
       switch (type) {
-        // StateLabel (25) message, response to GetLabel (23)
-        // https://lan.developer.lifx.com/docs/device-messages#section-statelabel-25
-        case 25: {
-          // the label might be padded with null bytes
-          const label = payload.includes("\0") ? payload.toString('utf8', 0, payload.indexOf("\0")) : payload.toString('utf8')
+        // State (107) message, response to Get (101)
+        // https://lan.developer.lifx.com/docs/light-messages#section-state-107
+        case 107: {
+          const h = payload.readUInt16LE(0) / 65535 * 360   // hue
+          const s = payload.readUInt16LE(2) / 65535         // saturation
+          const b = payload.readUInt16LE(4) / 65535         // brightness
+
+          const color = tinycolor({ h, s, v: b })
+
+          const power = payload.readUInt16LE(10) === 65535
+
+          const l = payload.slice(12, 12 + 32)
+          // string *might* be null terminated, and if it isn't, use the whole string
+          const label = l.includes("\0") ? l.toString('utf8', 0, l.indexOf("\0")) : l.toString('utf8')
 
           this.discoverCallback({
             ip: remoteInfo.address,
-            label
+            label,
+            state: {
+              color,
+              power,
+            }
           })
+
           break;
         }
       }
@@ -48,9 +62,11 @@ export class LifxServer {
   discover = (callback: DiscoverCallback) => {
     this.discoverCallback = callback;
 
-    // broadcast GetLabel (23) message
-    // https://lan.developer.lifx.com/docs/device-messages#section-getlabel-23
-    this.server.send(mkLifxMsg(23), lifxPort, this.broadcastAddr)
+    setInterval(() => {
+      // broadcast Get (101) message
+      // https://lan.developer.lifx.com/docs/light-messages#section-get-101
+      this.server.send(mkLifxMsg(101), lifxPort, this.broadcastAddr)
+    }, 1000)
   }
 
   setLightColor = (ip: string, cmd: DeviceCommand) => {
