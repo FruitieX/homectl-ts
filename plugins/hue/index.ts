@@ -126,7 +126,7 @@ export default class HuePlugin extends HomectlPlugin<Config> {
       const color = hueToTinycolor(state)?.toHsvString();
 
       await this.sendMsg('devices/discoveredState', t.unknown, {
-        path: `integrations/${this.id}/${name}`,
+        path: `devices/${this.id}/${name}`,
         state: {
           power: state.on,
           color,

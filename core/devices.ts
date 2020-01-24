@@ -110,6 +110,13 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     }
   }
 
+  async discoveredState(path: string, state: DeviceState) {
+    const match = this.state.devices[path];
+
+    if (match) console.log('found match', match);
+    console.log(path, state, this.state);
+  }
+
   // TODO: this doesn't handle canceling the transition when releasing the dimmer button
   // and always drops the brightness by given rate
   async adjustBrightness(unexpandedPath: string, rate: number) {
@@ -170,8 +177,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
           'Unable to decode discoveredState payload',
         );
 
-        console.log(path, state);
-
+        this.discoveredState(path, state);
         break;
       }
       // relay unknown commands to integrations/*

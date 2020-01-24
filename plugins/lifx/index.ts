@@ -32,16 +32,17 @@ export default class LifxPlugin extends HomectlPlugin<Config> {
 
   start = async () => {
     this.server.discover(device => {
-      const path = `integrations/${this.id}/${device.label}`;
-
       if (!this.devices[device.label]) {
-        this.app.emit('registerDevice', path);
+        this.app.emit(
+          'registerDevice',
+          `integrations/${this.id}/${device.label}`,
+        );
       }
 
       this.devices[device.label] = device;
 
       this.sendMsg('devices/discoveredState', t.unknown, {
-        path,
+        path: `devices/${this.id}/${device.label}`,
         state: device.state,
       });
     });
