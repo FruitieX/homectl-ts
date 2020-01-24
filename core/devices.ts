@@ -1,6 +1,6 @@
 import * as t from 'io-ts'
 
-import { PluginProps, throwDecoder, DeviceCommand, DeviceCommands } from "../types";
+import { PluginProps, throwDecoder, DeviceCommand, DeviceCommands, DeviceState } from "../types";
 import { HomectlPlugin } from '../plugins';
 import { groupBy } from 'fp-ts/lib/NonEmptyArray';
 import tinycolor from '@ctrl/tinycolor';
@@ -9,7 +9,7 @@ const Config = t.type({
 })
 type Config = t.TypeOf<typeof Config>
 
-interface DeviceState {
+interface InternalDeviceState {
   power: boolean;
   color?: string;
   brightness?: number;
@@ -19,7 +19,7 @@ interface DeviceState {
 }
 
 interface State {
-  devices: { [deviceId: string]: DeviceState | undefined }
+  devices: { [deviceId: string]: InternalDeviceState | undefined }
 }
 
 /**
@@ -132,6 +132,13 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
         const [path, rate] = cmd
 
         this.adjustBrightness(path, parseFloat(rate))
+        break;
+      }
+      case 'discoveredState': {
+        const state = throwDecoder(DeviceState)
+
+        console.log(state)
+
         break;
       }
       // relay unknown commands to integrations/*

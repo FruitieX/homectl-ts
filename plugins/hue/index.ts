@@ -4,7 +4,7 @@ import axios, { Method } from 'axios'
 import { BridgeState, BridgeSceneCreatedResponse, BridgeSensors, BridgeSensor, BridgeLights, BridgeLight, BridgeLightState, BridgeLightStates } from "./types";
 import { PluginProps, throwDecoder, DeviceCommand } from "../../types";
 import { HomectlPlugin } from '../../plugins';
-import { findHomectlScene, bridgeSensorsDiff, tinycolorToHue, sceneCmdToHue } from './utils';
+import { findHomectlScene, bridgeSensorsDiff, tinycolorToHue, sceneCmdToHue, hueToTinycolor } from './utils';
 import { map } from 'fp-ts/lib/Record';
 import { findIndex } from 'ramda';
 import { findFirst } from 'fp-ts/lib/Array';
@@ -65,6 +65,7 @@ export default class HuePlugin extends HomectlPlugin<Config> {
       ['on', 'dimUp', 'dimDown', 'off'].map(button => this.app.emit('registerSensor', `integrations/${this.id}/${sensor.name}/${button}`))
     })(this.bridgeSensors)
     this.pollSwitches()
+    this.pollLights()
   }
 
   pollSwitches = async () => {
@@ -77,6 +78,25 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     }
 
     setTimeout(this.pollSwitches, 100)
+  }
+
+  pollLights = async () => {
+    const newBridgeLights = await this.request(BridgeLights, '/lights')
+
+    for (const lightId in newBridgeLights) {
+      const { state, name } = newBridgeLights[lightId]
+      const color = hueToTinycolor(state).toHsvString()
+
+      await this.sendMsg('devices/discoveredState', t.unknown, {
+        path: `integrations/${this.id}/${name}`,
+        state: {
+          power: state.on,
+          color
+        } 
+      })
+    }
+
+    setTimeout(this.pollLights, 10000)
   }
 
   async handleMsg(path: string, payload: unknown) {

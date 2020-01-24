@@ -3,7 +3,7 @@ import { pipe } from 'fp-ts/lib/pipeable';
 import { fold } from 'fp-ts/lib/Option';
 import { flatten } from 'ramda';
 
-import { BridgeState, BridgeSceneSummary, BridgeSensors, SensorEvent, ButtonType as ButtonId } from "./types";
+import { BridgeState, BridgeSceneSummary, BridgeSensors, SensorEvent, ButtonType as ButtonId, BridgeLightState } from './types';
 import { SensorUpdate, DeviceCommand } from '../../types';
 import tinycolor, { TinyColor } from '@ctrl/tinycolor';
 
@@ -116,6 +116,16 @@ export const tinycolorToHue = (color?: TinyColor, brightness = 1) => {
     // tinycolor v value is in [0, 1], Hue uses [1, 254]
     bri: Math.round(hsv.v * 254 * brightness)
   }
+}
+
+export const hueToTinycolor = (state: BridgeLightState) => {
+  const color = tinycolor({
+    h: state.hue !== undefined ? state.hue / 65536 * 360 : 0,
+    s: state.sat !== undefined ? state.sat / 254 : 0,
+    v: state.bri !== undefined ? state.bri / 254 : 0,
+  })
+
+  return color
 }
 
 export const sceneCmdToHue = (cmd: DeviceCommand) => {

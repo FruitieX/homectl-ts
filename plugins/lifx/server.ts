@@ -29,7 +29,7 @@ export class LifxServer {
           const s = payload.readUInt16LE(2) / 65535         // saturation
           const b = payload.readUInt16LE(4) / 65535         // brightness
 
-          const color = tinycolor({ h, s, v: b })
+          const color = tinycolor({ h, s, v: b }).toHsvString()
 
           const power = payload.readUInt16LE(10) === 65535
 
@@ -42,7 +42,7 @@ export class LifxServer {
             label,
             state: {
               color,
-              power,
+              power
             }
           })
 

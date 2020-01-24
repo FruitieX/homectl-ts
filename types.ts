@@ -31,6 +31,12 @@ export const GroupConfig = t.type({
 export const GroupsConfig = t.record(t.string, GroupConfig);
 export type GroupsConfig = t.TypeOf<typeof GroupsConfig>
 
+export const DeviceState = t.type({
+  power: t.boolean,
+  color: t.union([t.string, t.undefined])
+})
+export type DeviceState = t.TypeOf<typeof DeviceState>
+
 export const DeviceCommand = t.type({
   path: t.string,
   power: t.boolean,

@@ -1,12 +1,9 @@
-import { TinyColor } from "@ctrl/tinycolor";
+import { DeviceState } from "../../types";
 
 export interface LifxDevice {
   ip: string;
   label: string;
-  state: {
-    color: TinyColor;
-    power: boolean;
-  }
+  state: DeviceState;
 }
 
 export type DiscoverCallback = (device: LifxDevice) => void
