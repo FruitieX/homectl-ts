@@ -157,7 +157,16 @@ export const tinycolorToHue = (color?: TinyColor, brightness = 1) => {
   };
 };
 
-export const hueToTinycolor = (state: BridgeLightState) => {
+export const hueToTinycolor = (
+  state: BridgeLightState,
+): TinyColor | undefined => {
+  if (
+    state.hue === undefined ||
+    state.sat === undefined ||
+    state.bri === undefined
+  )
+    return;
+
   const color = tinycolor({
     h: state.hue !== undefined ? (state.hue / 65536) * 360 : 0,
     s: state.sat !== undefined ? state.sat / 254 : 0,

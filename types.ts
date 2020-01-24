@@ -37,6 +37,12 @@ export const DeviceState = t.type({
 });
 export type DeviceState = t.TypeOf<typeof DeviceState>;
 
+export const DiscoveredState = t.type({
+  path: t.string,
+  state: DeviceState,
+});
+export type DiscoveredState = t.TypeOf<typeof DiscoveredState>;
+
 export const DeviceCommand = t.type({
   path: t.string,
   power: t.boolean,

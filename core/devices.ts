@@ -6,6 +6,7 @@ import {
   DeviceCommand,
   DeviceCommands,
   DeviceState,
+  DiscoveredState,
 } from '../types';
 import { HomectlPlugin } from '../plugins';
 import { groupBy } from 'fp-ts/lib/NonEmptyArray';
@@ -164,9 +165,12 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
         break;
       }
       case 'discoveredState': {
-        const state = throwDecoder(DeviceState);
+        const { path, state } = throwDecoder(DiscoveredState)(
+          payload,
+          'Unable to decode discoveredState payload',
+        );
 
-        console.log(state);
+        console.log(path, state);
 
         break;
       }

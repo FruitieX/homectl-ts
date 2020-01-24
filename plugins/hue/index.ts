@@ -123,7 +123,7 @@ export default class HuePlugin extends HomectlPlugin<Config> {
 
     for (const lightId in newBridgeLights) {
       const { state, name } = newBridgeLights[lightId];
-      const color = hueToTinycolor(state).toHsvString();
+      const color = hueToTinycolor(state)?.toHsvString();
 
       await this.sendMsg('devices/discoveredState', t.unknown, {
         path: `integrations/${this.id}/${name}`,
