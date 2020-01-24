@@ -1,4 +1,4 @@
-import { DeviceState } from "../../types";
+import { DeviceState } from '../../types';
 
 export interface LifxDevice {
   ip: string;
@@ -6,4 +6,4 @@ export interface LifxDevice {
   state: DeviceState;
 }
 
-export type DiscoverCallback = (device: LifxDevice) => void
+export type DiscoverCallback = (device: LifxDevice) => void;
