@@ -61,6 +61,8 @@ export const DeviceCommand = t.type({
   power: t.boolean,
   color: t.union([t.string, t.undefined]),
   transition: t.union([t.number, t.undefined]),
+
+  // TODO: get rid of this, encode brightness inside color
   brightness: t.union([t.number, t.undefined]),
 });
 export type DeviceCommand = t.TypeOf<typeof DeviceCommand>;

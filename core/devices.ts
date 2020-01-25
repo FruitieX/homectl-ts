@@ -12,7 +12,7 @@ import {
 } from '../types';
 import { HomectlPlugin } from '../plugins';
 import { groupBy } from 'fp-ts/lib/NonEmptyArray';
-import tinycolor from '@ctrl/tinycolor';
+import { checkStateEq } from '../utils';
 
 const Config = t.type({});
 type Config = t.TypeOf<typeof Config>;
@@ -75,24 +75,31 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     this.applyDeviceCmds(scene, sceneName);
   }
 
+  applyDeviceCmd(cmd: DeviceCommand, sceneName?: string) {
+    const device = this.getDevice(cmd.path);
+
+    const sceneProps =
+      sceneName === undefined
+        ? {}
+        : {
+            scene: sceneName,
+            sceneActivationTime: Date.now(),
+            // reset brightness to 1 unless scene specifies otherwise
+            brightness: 1,
+          };
+
+    return this.setDevice(cmd.path, {
+      ...defaultDeviceState,
+      ...device,
+      transition: 500, // default transition time, cmd can override
+      ...sceneProps,
+      ...cmd,
+    });
+  }
+
   async applyDeviceCmds(cmds: DeviceCommands, sceneName?: string) {
     for (const cmd of cmds) {
-      const sceneProps =
-        sceneName === undefined
-          ? {}
-          : {
-              scene: sceneName,
-              sceneActivationTime: Date.now(),
-              brightness: 1, // reset brightness to 1 unless scene specifies otherwise
-            };
-
-      this.setDevice(cmd.path, {
-        ...defaultDeviceState,
-        ...this.getDevice(cmd.path),
-        transition: 500, // default transition time, cmd can override
-        ...sceneProps,
-        ...cmd,
-      });
+      this.applyDeviceCmd(cmd, sceneName);
     }
 
     const groupedSceneCmds = groupBy((cmd: DeviceCommand) => {
@@ -106,11 +113,11 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     }
   }
 
-  async discoveredState(path: string, state: DeviceState) {
-    const match = this.getDevice(path);
+  async discoveredState(path: string, discoveredState: DeviceState) {
+    let internalState = this.getDevice(path);
 
-    if (!match) {
-      this.registerDevice(path, state);
+    if (!internalState) {
+      this.registerDevice(path, discoveredState);
 
       // this device was unknown to us due to not registering and not appearing
       // in any scene commands yet, we don't have any internal state yet so stop
@@ -118,9 +125,41 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
       return;
     }
 
+    if (internalState.scene) {
+      const scene = await this.sendMsg(
+        `scenes/getScene`,
+        DeviceCommands,
+        internalState.scene,
+      );
+
+      const rewrittenPath = this.rewritePath(path);
+      const cmd = scene.find(cmd => cmd.path === rewrittenPath);
+
+      if (!cmd) {
+        this.log(
+          `Could not find DeviceCommands for ${rewrittenPath} in scene ${internalState.scene}`,
+        );
+        return;
+      }
+
+      internalState = this.applyDeviceCmd(cmd);
+    }
+
     // make sure the discovered state matches with our internal state
-    // if (match) console.log('found match', match);
-    // console.log(path, state, this.state);
+    const diff = checkStateEq(internalState, discoveredState);
+
+    // states match, do nothing
+    if (!diff) return;
+
+    this.log(
+      'State mismatch detected, correcting...',
+      internalState,
+      discoveredState,
+    );
+
+    const cmds: DeviceCommands = [{ path, ...internalState }];
+
+    this.sendMsg(path, t.unknown, cmds);
   }
 
   // TODO: this doesn't handle canceling the transition when releasing the dimmer button
@@ -133,7 +172,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
         const prevState = this.getDevice(path);
 
         if (!prevState) {
-          console.log(`Cannot adjust brightness for unknown device at ${path}`);
+          this.log(`Cannot adjust brightness for unknown device at ${path}`);
           return;
         }
 
@@ -169,6 +208,8 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
   // sets device with rewritten path to devices/*
   setDevice(path: string, device: InternalDeviceState) {
     this.state.devices[this.rewritePath(path)] = device;
+
+    return device;
   }
 
   // returns device with path rewritten to devices/*
