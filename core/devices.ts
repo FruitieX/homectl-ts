@@ -46,7 +46,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
       ...state,
     };
 
-    this.state.devices[path] = device;
+    this.setDevice(path, device);
     this.log(`Registered device "${path}"`);
 
     return device;
@@ -80,12 +80,12 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
               brightness: 1, // reset brightness to 1 unless scene specifies otherwise
             };
 
-      this.state.devices[cmd.path] = {
-        ...this.state.devices[cmd.path],
+      this.setDevice(cmd.path, {
+        ...this.getDevice(cmd.path),
         transition: 500, // default transition time, cmd can override
         ...sceneProps,
         ...cmd,
-      };
+      });
     }
 
     const groupedSceneCmds = groupBy((cmd: DeviceCommand) => {
@@ -100,7 +100,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
   }
 
   async discoveredState(path: string, state: DeviceState) {
-    let match = this.state.devices[path];
+    let match = this.getDevice(path);
 
     if (!match) {
       match = this.registerDevice(path, state);
@@ -115,20 +115,28 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
   async adjustBrightness(unexpandedPath: string, rate: number) {
     const paths = await this.expandPath(unexpandedPath);
 
-    const cmds: DeviceCommands = paths.map(path => {
-      const prevState = this.state.devices[path];
-      const cmd = {
-        path,
-        brightness: 1,
-        ...prevState,
-        transition: 1000,
-      };
+    const cmds = paths
+      .map(path => {
+        const prevState = this.getDevice(path);
 
-      return {
-        ...cmd,
-        brightness: Math.min(2, Math.max(0, (cmd.brightness ?? 1) + rate)),
-      };
-    });
+        if (!prevState) {
+          console.log(`Cannot adjust brightness for unknown device at ${path}`);
+          return;
+        }
+
+        const cmd: DeviceCommand = {
+          path,
+          brightness: 1,
+          ...prevState,
+          transition: 1000,
+        };
+
+        return {
+          ...cmd,
+          brightness: Math.min(1, Math.max(0, (cmd.brightness ?? 1) + rate)),
+        };
+      })
+      .filter(Boolean) as DeviceCommands;
 
     await this.applyDeviceCmds(cmds);
   }
@@ -139,6 +147,29 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     const devices = await this.sendMsg(path, InternalDeviceStates);
 
     return Object.keys(devices);
+  }
+
+  rewritePath(path: string) {
+    return path.replace(/^integrations\//, 'devices/');
+  }
+
+  // sets device with rewritten path to devices/*
+  setDevice(path: string, device: InternalDeviceState) {
+    this.state.devices[this.rewritePath(path)] = device;
+  }
+
+  // returns device with path rewritten to devices/*
+  getDevice(path: string) {
+    return this.state.devices[this.rewritePath(path)];
+  }
+
+  // returns devices with paths rewritten to devices/*
+  getDevices() {
+    return Object.fromEntries(
+      Object.entries(this.state.devices).map(([path, device]) => {
+        return [this.rewritePath(path), device];
+      }),
+    );
   }
 
   async handleMsg(path: string, payload: unknown) {
@@ -174,7 +205,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
         break;
       }
       case 'getDevices': {
-        return this.state.devices;
+        return this.getDevices();
       }
       // relay unknown commands to integrations/*
       default:
