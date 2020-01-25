@@ -50,6 +50,9 @@ export default class DummyDevicesPlugin extends HomectlPlugin<Config> {
     for (const device of this.config.devices) {
       const initialState = {
         path: mkDevicePath(this, device),
+        state: {
+          power: true,
+        },
       };
       this.sendMsg('devices/discoveredState', t.unknown, initialState);
     }
