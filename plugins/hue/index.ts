@@ -43,6 +43,7 @@ export default class HuePlugin extends HomectlPlugin<Config> {
   homectlSceneId = '';
   bridgeSensors: BridgeSensors = {};
   bridgeLights: BridgeLights = {};
+  pollLightsTimer: NodeJS.Timeout | undefined;
 
   constructor(props: PluginProps<Config>) {
     super(props, Config);
@@ -134,7 +135,12 @@ export default class HuePlugin extends HomectlPlugin<Config> {
       });
     }
 
-    setTimeout(this.pollLights, 10000);
+    this.resetPollLightsTimer();
+  };
+
+  resetPollLightsTimer = () => {
+    if (this.pollLightsTimer) clearTimeout(this.pollLightsTimer);
+    this.pollLightsTimer = setTimeout(this.pollLights, 10000);
   };
 
   async handleMsg(path: string, payload: unknown) {
@@ -142,6 +148,10 @@ export default class HuePlugin extends HomectlPlugin<Config> {
       payload,
       'Unable to decode batch light update',
     );
+
+    // defer light state discovery so we don't discover old state before the
+    // current DeviceCommand update has completed
+    this.resetPollLightsTimer();
 
     const lightstates: BridgeLightStates = {};
 

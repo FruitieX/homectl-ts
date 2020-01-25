@@ -10,7 +10,9 @@ const lifxPort = 56700;
 export class LifxServer {
   server: dgram.Socket;
   broadcastAddr: string;
+
   discoverCallback: DiscoverCallback | undefined;
+  discoverTimer: NodeJS.Timeout | undefined;
 
   constructor(networkInterface: string) {
     this.server = dgram.createSocket('udp4');
@@ -63,15 +65,26 @@ export class LifxServer {
 
   discover = (callback: DiscoverCallback) => {
     this.discoverCallback = callback;
+    this.doDiscover();
+  };
 
-    setInterval(() => {
-      // broadcast Get (101) message
-      // https://lan.developer.lifx.com/docs/light-messages#section-get-101
-      this.server.send(mkLifxMsg(101), lifxPort, this.broadcastAddr);
-    }, 1000);
+  doDiscover = () => {
+    // broadcast Get (101) message
+    // https://lan.developer.lifx.com/docs/light-messages#section-get-101
+    this.server.send(mkLifxMsg(101), lifxPort, this.broadcastAddr);
+    this.resetDiscoverTimer();
+  };
+
+  resetDiscoverTimer = () => {
+    if (this.discoverTimer) clearTimeout(this.discoverTimer);
+    this.discoverTimer = setTimeout(this.doDiscover, 1000);
   };
 
   setLightColor = (ip: string, cmd: DeviceCommand) => {
+    // defer light state discovery so we don't discover old state before the
+    // current DeviceCommand update has completed
+    this.resetDiscoverTimer();
+
     const color = tinycolor(cmd.color);
 
     const { brightness = 1, transition = 500, power } = cmd;
