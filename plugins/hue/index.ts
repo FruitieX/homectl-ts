@@ -26,6 +26,7 @@ import { findFirst } from 'fp-ts/lib/Array';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { fold } from 'fp-ts/lib/Option';
 import tinycolor from '@ctrl/tinycolor';
+import { mkDevicePath } from '../../utils';
 
 const Config = t.type({
   addr: t.string,
@@ -56,7 +57,8 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     data?: unknown,
   ) {
     const baseURL = `http://${this.config.addr}/api/${this.config.username}`;
-    if (url !== '/sensors') this.log(`Making hue request to: ${url}`);
+    if (url !== '/sensors' && url !== '/lights')
+      this.log(`Making hue request to: ${url}`);
     const { data: response } = await axios({ url, baseURL, method, data });
     const decoded = throwDecoder(decoder)(
       response,
@@ -88,9 +90,9 @@ export default class HuePlugin extends HomectlPlugin<Config> {
   }
 
   start = async () => {
-    map((light: BridgeLight) =>
-      this.app.emit('registerDevice', `integrations/${this.id}/${light.name}`),
-    )(this.bridgeLights);
+    await this.dispatchDiscoveredState();
+
+    // TODO: refactor this to not use this.app.emit
     map((sensor: BridgeSensor) => {
       if (sensor.type !== 'ZLLSwitch') return;
       ['on', 'dimUp', 'dimDown', 'off'].map(button =>
@@ -100,8 +102,9 @@ export default class HuePlugin extends HomectlPlugin<Config> {
         ),
       );
     })(this.bridgeSensors);
+
     this.pollSwitches();
-    this.pollLights();
+    this.resetPollLightsTimer();
   };
 
   pollSwitches = async () => {
@@ -119,22 +122,24 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     setTimeout(this.pollSwitches, 100);
   };
 
-  pollLights = async () => {
-    const newBridgeLights = await this.request(BridgeLights, '/lights');
-
-    for (const lightId in newBridgeLights) {
-      const { state, name } = newBridgeLights[lightId];
+  dispatchDiscoveredState = async () => {
+    for (const lightId in this.bridgeLights) {
+      const { state, name } = this.bridgeLights[lightId];
       const color = hueToTinycolor(state)?.toHsvString();
 
       await this.sendMsg('devices/discoveredState', t.unknown, {
-        path: `devices/${this.id}/${name}`,
+        path: mkDevicePath(this, name),
         state: {
           power: state.on,
           color,
         },
       });
     }
+  };
 
+  pollLights = async () => {
+    this.bridgeLights = await this.request(BridgeLights, '/lights');
+    await this.dispatchDiscoveredState();
     this.resetPollLightsTimer();
   };
 

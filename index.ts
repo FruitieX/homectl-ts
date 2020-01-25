@@ -38,7 +38,7 @@ const init = async () => {
 
     const retVal = await instance.handleMsg(fwdPath, payload);
 
-    console.log('sendMsg', { path, payload, retVal });
+    // console.log('sendMsg', { path, payload, retVal });
 
     const decoded = throwDecoder(decoder)(
       retVal,

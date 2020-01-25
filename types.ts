@@ -43,6 +43,19 @@ export const DiscoveredState = t.type({
 });
 export type DiscoveredState = t.TypeOf<typeof DiscoveredState>;
 
+export const InternalDeviceState = t.type({
+  power: t.boolean,
+  color: t.union([t.string, t.undefined]),
+  brightness: t.union([t.number, t.undefined]),
+  scene: t.union([t.string, t.undefined]),
+  sceneActivationTime: t.union([t.number, t.undefined]),
+  transition: t.union([t.number, t.undefined]),
+});
+export type InternalDeviceState = t.TypeOf<typeof InternalDeviceState>;
+
+export const InternalDeviceStates = t.record(t.string, InternalDeviceState);
+export type InternalDeviceStates = t.TypeOf<typeof InternalDeviceStates>;
+
 export const DeviceCommand = t.type({
   path: t.string,
   power: t.boolean,

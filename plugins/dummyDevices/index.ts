@@ -3,10 +3,10 @@ import R from 'ramda';
 
 import { PluginProps } from '../../types';
 import { HomectlPlugin } from '../../plugins';
+import { mkDevicePath } from '../../utils';
 
 const Config = t.type({
   devices: t.array(t.string),
-  lights: t.union([t.boolean, t.undefined]),
 });
 type Config = t.TypeOf<typeof Config>;
 
@@ -48,12 +48,10 @@ export default class DummyDevicesPlugin extends HomectlPlugin<Config> {
 
   async start() {
     for (const device of this.config.devices) {
-      this.app.emit('registerDevice', `integrations/${this.id}/${device}`);
-
-      // lights can register with the lights plugin if available
-      if (this.config.lights) {
-        this.app.emit('registerDevice', `${this.id}/${device}`);
-      }
+      const initialState = {
+        path: mkDevicePath(this, device),
+      };
+      this.sendMsg('devices/discoveredState', t.unknown, initialState);
     }
   }
 

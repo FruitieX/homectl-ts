@@ -4,6 +4,7 @@ import { PluginProps, throwDecoder, DeviceCommand } from '../../types';
 import { HomectlPlugin } from '../../plugins';
 import { LifxServer } from './server';
 import { LifxDevice } from './types';
+import { mkDevicePath } from '../../utils';
 
 const Config = t.type({
   networkInterface: t.string,
@@ -32,17 +33,10 @@ export default class LifxPlugin extends HomectlPlugin<Config> {
 
   start = async () => {
     this.server.discover(device => {
-      if (!this.devices[device.label]) {
-        this.app.emit(
-          'registerDevice',
-          `integrations/${this.id}/${device.label}`,
-        );
-      }
-
       this.devices[device.label] = device;
 
       this.sendMsg('devices/discoveredState', t.unknown, {
-        path: `devices/${this.id}/${device.label}`,
+        path: mkDevicePath(this, device.label),
         state: device.state,
       });
     });

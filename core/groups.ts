@@ -1,7 +1,12 @@
 import * as t from 'io-ts';
 import minimatch from 'minimatch';
 
-import { PluginProps, GroupsConfig, throwDecoder } from '../types';
+import {
+  PluginProps,
+  GroupsConfig,
+  throwDecoder,
+  InternalDeviceStates,
+} from '../types';
 import { HomectlPlugin } from '../plugins';
 
 const Config = GroupsConfig;
@@ -15,27 +20,20 @@ type Config = t.TypeOf<typeof Config>;
 
 export default class GroupsPlugin extends HomectlPlugin<Config> {
   groups: GroupsConfig = {};
-  knownDevices: Array<string> = [];
 
   constructor(props: PluginProps<Config>) {
     super(props, Config);
-  }
 
-  async register() {
     this.groups = this.config;
-
-    this.app.on('registerDevice', (msg: unknown) => {
-      const device = throwDecoder(t.string)(
-        msg,
-        'Unable to decode registerDevice message',
-      );
-
-      this.knownDevices.push(device);
-    });
   }
 
   async handleMsg(path: string, payload: unknown) {
     const groupName = path;
+
+    const allDevices = await this.sendMsg(
+      'devices/getDevices',
+      InternalDeviceStates,
+    );
 
     const group = this.groups[groupName];
     if (!group)
@@ -43,11 +41,17 @@ export default class GroupsPlugin extends HomectlPlugin<Config> {
         `No group found with name ${groupName}, dropping message: ${path} ${payload}`,
       );
 
-    const devices = this.knownDevices.filter((...deviceArgs) =>
+    const matchingPaths = Object.keys(allDevices).filter((...deviceArgs) =>
       // see if we can find any path that matches to this device
       group.devices.find(path => minimatch.filter(path)(...deviceArgs)),
     );
 
-    return devices;
+    const groupDevices = Object.fromEntries(
+      Object.entries(allDevices).filter(([path]) =>
+        matchingPaths.includes(path),
+      ),
+    );
+
+    return groupDevices;
   }
 }

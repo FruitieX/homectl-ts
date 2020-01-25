@@ -6,6 +6,7 @@ import {
   DeviceCommand,
   GroupConfig,
   throwDecoder,
+  InternalDeviceStates,
 } from '../types';
 import { HomectlPlugin } from '../plugins';
 import tinycolor from '@ctrl/tinycolor';
@@ -72,9 +73,9 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
   async expandPath(path: string) {
     if (!path.startsWith('groups/')) return [path];
 
-    const devices = await this.sendMsg(path, t.array(t.string));
+    const devices = await this.sendMsg(path, InternalDeviceStates);
 
-    return devices;
+    return Object.keys(devices);
   }
 
   async getDynamicProps(props: { [key: string]: unknown }) {

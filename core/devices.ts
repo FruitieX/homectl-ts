@@ -7,6 +7,8 @@ import {
   DeviceCommands,
   DeviceState,
   DiscoveredState,
+  InternalDeviceStates,
+  InternalDeviceState,
 } from '../types';
 import { HomectlPlugin } from '../plugins';
 import { groupBy } from 'fp-ts/lib/NonEmptyArray';
@@ -15,17 +17,8 @@ import tinycolor from '@ctrl/tinycolor';
 const Config = t.type({});
 type Config = t.TypeOf<typeof Config>;
 
-interface InternalDeviceState {
-  power: boolean;
-  color?: string;
-  brightness?: number;
-  scene?: string;
-  sceneActivationTime?: number;
-  transition?: number;
-}
-
 interface State {
-  devices: { [deviceId: string]: InternalDeviceState | undefined };
+  devices: InternalDeviceStates;
 }
 
 /**
@@ -39,28 +32,24 @@ interface State {
 
 export default class DevicesPlugin extends HomectlPlugin<Config> {
   state: State = { devices: {} };
-  knownDevices: Array<string> = [];
 
   constructor(props: PluginProps<Config>) {
     super(props, Config);
   }
 
-  async register() {
-    this.app.on('registerDevice', (msg: unknown) => {
-      const path = throwDecoder(t.string)(
-        msg,
-        'Unable to decode registerDevice message',
-      );
+  registerDevice(path: string, state: DeviceState) {
+    const device: InternalDeviceState = {
+      brightness: 1,
+      scene: undefined,
+      sceneActivationTime: undefined,
+      transition: undefined,
+      ...state,
+    };
 
-      // don't handle already known devices
-      if (path.startsWith('devices/')) return;
+    this.state.devices[path] = device;
+    this.log(`Registered device "${path}"`);
 
-      this.knownDevices.push(path);
-      this.log(`Discovered device "${path}"`);
-
-      const [subsystem, ...fwdPath] = path.split('/');
-      this.app.emit('registerDevice', `devices/${fwdPath.join('/')}`);
-    });
+    return device;
   }
 
   async activateScene(sceneName: string) {
@@ -111,10 +100,14 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
   }
 
   async discoveredState(path: string, state: DeviceState) {
-    const match = this.state.devices[path];
+    let match = this.state.devices[path];
 
-    if (match) console.log('found match', match);
-    console.log(path, state, this.state);
+    if (!match) {
+      match = this.registerDevice(path, state);
+    }
+
+    // if (match) console.log('found match', match);
+    // console.log(path, state, this.state);
   }
 
   // TODO: this doesn't handle canceling the transition when releasing the dimmer button
@@ -127,7 +120,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
       const cmd = {
         path,
         brightness: 1,
-        ...(prevState as DeviceCommand),
+        ...prevState,
         transition: 1000,
       };
 
@@ -143,9 +136,9 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
   async expandPath(path: string) {
     if (!path.startsWith('groups/')) return [path];
 
-    const devices = await this.sendMsg(path, t.array(t.string));
+    const devices = await this.sendMsg(path, InternalDeviceStates);
 
-    return devices;
+    return Object.keys(devices);
   }
 
   async handleMsg(path: string, payload: unknown) {
@@ -179,6 +172,9 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
 
         this.discoveredState(path, state);
         break;
+      }
+      case 'getDevices': {
+        return this.state.devices;
       }
       // relay unknown commands to integrations/*
       default:
