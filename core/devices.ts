@@ -21,6 +21,15 @@ interface State {
   devices: InternalDeviceStates;
 }
 
+const defaultDeviceState: InternalDeviceState = {
+  brightness: 1,
+  scene: undefined,
+  sceneActivationTime: undefined,
+  transition: undefined,
+  color: undefined,
+  power: true,
+};
+
 /**
  * Devices plugin
  *
@@ -37,12 +46,9 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     super(props, Config);
   }
 
-  registerDevice(path: string, state: DeviceState) {
+  registerDevice(path: string, state: DeviceState): InternalDeviceState {
     const device: InternalDeviceState = {
-      brightness: 1,
-      scene: undefined,
-      sceneActivationTime: undefined,
-      transition: undefined,
+      ...defaultDeviceState,
       ...state,
     };
 
@@ -81,6 +87,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
             };
 
       this.setDevice(cmd.path, {
+        ...defaultDeviceState,
         ...this.getDevice(cmd.path),
         transition: 500, // default transition time, cmd can override
         ...sceneProps,
@@ -100,12 +107,18 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
   }
 
   async discoveredState(path: string, state: DeviceState) {
-    let match = this.getDevice(path);
+    const match = this.getDevice(path);
 
     if (!match) {
-      match = this.registerDevice(path, state);
+      this.registerDevice(path, state);
+
+      // this device was unknown to us due to not registering and not appearing
+      // in any scene commands yet, we don't have any internal state yet so stop
+      // here
+      return;
     }
 
+    // make sure the discovered state matches with our internal state
     // if (match) console.log('found match', match);
     // console.log(path, state, this.state);
   }
@@ -159,7 +172,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
   }
 
   // returns device with path rewritten to devices/*
-  getDevice(path: string) {
+  getDevice(path: string): InternalDeviceState | undefined {
     return this.state.devices[this.rewritePath(path)];
   }
 
