@@ -6,13 +6,15 @@ import {
   DeviceCommand,
   DeviceCommands,
   DeviceState,
-  DiscoveredState,
   InternalDeviceStates,
   InternalDeviceState,
+  InternalDeviceCommand,
+  InternalDeviceCommands,
 } from '../types';
 import { HomectlPlugin } from '../plugins';
 import { groupBy } from 'fp-ts/lib/NonEmptyArray';
 import { checkStateEq } from '../utils';
+import tinycolor from '@ctrl/tinycolor';
 
 const Config = t.type({});
 type Config = t.TypeOf<typeof Config>;
@@ -22,6 +24,7 @@ interface State {
 }
 
 const defaultDeviceState: InternalDeviceState = {
+  path: 'unknown',
   brightness: 1,
   scene: undefined,
   sceneActivationTime: undefined,
@@ -62,7 +65,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     // send scene switch msg to all devices in scene, get scene by sending scenes/somename msg
     const scene = await this.sendMsg(
       `scenes/getScene`,
-      DeviceCommands,
+      InternalDeviceCommands,
       sceneName,
     );
 
@@ -75,7 +78,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     this.applyDeviceCmds(scene, sceneName);
   }
 
-  applyDeviceCmd(cmd: DeviceCommand, sceneName?: string) {
+  applyDeviceCmd(cmd: InternalDeviceCommand, sceneName?: string) {
     const device = this.getDevice(cmd.path);
 
     const sceneProps =
@@ -97,27 +100,42 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     });
   }
 
-  async applyDeviceCmds(cmds: DeviceCommands, sceneName?: string) {
+  async applyDeviceCmds(cmds: InternalDeviceCommands, sceneName?: string) {
     for (const cmd of cmds) {
       this.applyDeviceCmd(cmd, sceneName);
     }
 
-    const groupedSceneCmds = groupBy((cmd: DeviceCommand) => {
+    const groupedSceneCmds = groupBy((cmd: InternalDeviceCommand) => {
       const [subsystem, plugin] = cmd.path.split('/');
       return `${subsystem}/${plugin}`;
     })(cmds);
 
     for (const path in groupedSceneCmds) {
       const group = groupedSceneCmds[path];
-      this.sendMsg(path, t.unknown, group);
+
+      const cmds = group.map(this.internalCmdToDeviceCmd);
+      this.sendMsg(path, t.unknown, cmds);
     }
   }
 
-  async discoveredState(path: string, discoveredState: DeviceState) {
-    let internalState = this.getDevice(path);
+  internalCmdToDeviceCmd = (cmd: InternalDeviceCommand): DeviceCommand => {
+    if (!cmd.color) return cmd;
+
+    const brightness = cmd.brightness ?? 1;
+    const color = tinycolor(cmd.color).toHsv();
+    color.v *= brightness;
+
+    return {
+      ...cmd,
+      color: tinycolor(color).toHsvString(),
+    };
+  };
+
+  async discoveredState(discoveredState: DeviceState) {
+    let internalState = this.getDevice(discoveredState.path);
 
     if (!internalState) {
-      this.registerDevice(path, discoveredState);
+      this.registerDevice(discoveredState.path, discoveredState);
 
       // this device was unknown to us due to not registering and not appearing
       // in any scene commands yet, we don't have any internal state yet so stop
@@ -128,11 +146,11 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     if (internalState.scene) {
       const scene = await this.sendMsg(
         `scenes/getScene`,
-        DeviceCommands,
+        InternalDeviceCommands,
         internalState.scene,
       );
 
-      const rewrittenPath = this.rewritePath(path);
+      const rewrittenPath = this.rewritePath(discoveredState.path);
       const cmd = scene.find(cmd => cmd.path === rewrittenPath);
 
       if (!cmd) {
@@ -146,10 +164,10 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     }
 
     // make sure the discovered state matches with our internal state
-    const diff = checkStateEq(internalState, discoveredState);
+    const statesEqual = checkStateEq(internalState, discoveredState);
 
     // states match, do nothing
-    if (!diff) return;
+    if (statesEqual) return;
 
     this.log(
       'State mismatch detected, correcting...',
@@ -157,9 +175,11 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
       discoveredState,
     );
 
-    const cmds: DeviceCommands = [{ path, ...internalState }];
+    const cmds: DeviceCommands = [
+      { path: discoveredState.path, ...internalState },
+    ].map(this.internalCmdToDeviceCmd);
 
-    this.sendMsg(path, t.unknown, cmds);
+    this.sendMsg(discoveredState.path, t.unknown, cmds);
   }
 
   // TODO: this doesn't handle canceling the transition when releasing the dimmer button
@@ -176,7 +196,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
           return;
         }
 
-        const cmd: DeviceCommand = {
+        const cmd: InternalDeviceCommand = {
           path,
           brightness: 1,
           ...prevState,
@@ -188,7 +208,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
           brightness: Math.min(1, Math.max(0, (cmd.brightness ?? 1) + rate)),
         };
       })
-      .filter(Boolean) as DeviceCommands;
+      .filter(Boolean) as InternalDeviceCommands;
 
     await this.applyDeviceCmds(cmds);
   }
@@ -250,12 +270,12 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
         break;
       }
       case 'discoveredState': {
-        const { path, state } = throwDecoder(DiscoveredState)(
+        const state = throwDecoder(DeviceState)(
           payload,
           'Unable to decode discoveredState payload',
         );
 
-        this.discoveredState(path, state);
+        this.discoveredState(state);
         break;
       }
       case 'getDevices': {

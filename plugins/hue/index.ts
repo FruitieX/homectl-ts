@@ -129,10 +129,8 @@ export default class HuePlugin extends HomectlPlugin<Config> {
 
       await this.sendMsg('devices/discoveredState', t.unknown, {
         path: mkDevicePath(this, name),
-        state: {
-          power: state.on,
-          color,
-        },
+        power: state.on,
+        color,
       });
     }
   };

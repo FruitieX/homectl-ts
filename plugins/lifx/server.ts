@@ -4,6 +4,8 @@ import { getBroadcastAddr, mkLifxMsg } from './utils';
 import { DiscoverCallback } from './types';
 import { DeviceCommand } from '../../types';
 import tinycolor from '@ctrl/tinycolor';
+import LifxPlugin from '.';
+import { mkDevicePath } from '../../utils';
 
 const lifxPort = 56700;
 
@@ -14,7 +16,7 @@ export class LifxServer {
   discoverCallback: DiscoverCallback | undefined;
   discoverTimer: NodeJS.Timeout | undefined;
 
-  constructor(networkInterface: string) {
+  constructor(plugin: LifxPlugin, networkInterface: string) {
     this.server = dgram.createSocket('udp4');
 
     this.server.on('message', (msg, remoteInfo) => {
@@ -45,6 +47,7 @@ export class LifxServer {
             ip: remoteInfo.address,
             label,
             state: {
+              path: mkDevicePath(plugin, label),
               color,
               power,
             },
@@ -71,7 +74,8 @@ export class LifxServer {
   doDiscover = () => {
     // broadcast Get (101) message
     // https://lan.developer.lifx.com/docs/light-messages#section-get-101
-    this.server.send(mkLifxMsg(101), lifxPort, this.broadcastAddr);
+    this.server.send(mkLifxMsg(101, true), lifxPort, this.broadcastAddr);
+    console.log('sent lifx discovery message');
     this.resetDiscoverTimer();
   };
 
@@ -87,7 +91,7 @@ export class LifxServer {
 
     const color = tinycolor(cmd.color);
 
-    const { brightness = 1, transition = 500, power } = cmd;
+    const { transition = 500, power } = cmd;
     const hsv = color.toHsv();
 
     // send SetPower (117) message
@@ -95,7 +99,7 @@ export class LifxServer {
     const setPowerPayload = Buffer.alloc(16 + 32);
     setPowerPayload.writeUInt16LE(power ? 65535 : 0, 0);
     setPowerPayload.writeUInt16LE(transition, 2);
-    this.server.send(mkLifxMsg(117, setPowerPayload), lifxPort, ip);
+    this.server.send(mkLifxMsg(117, false, setPowerPayload), lifxPort, ip);
 
     // stop here if we're turning power off, no use setting colors then
     if (!power) return;
@@ -105,9 +109,9 @@ export class LifxServer {
     const setColorPayload = Buffer.alloc(8 + 16 * 4 + 32);
     setColorPayload.writeUInt16LE(Math.floor((hsv.h / 360) * 65535), 1);
     setColorPayload.writeUInt16LE(Math.floor(hsv.s * 65535), 3);
-    setColorPayload.writeUInt16LE(Math.floor(hsv.v * brightness * 65535), 5);
+    setColorPayload.writeUInt16LE(Math.floor(hsv.v * 65535), 5);
     setColorPayload.writeUInt16LE(6500, 7);
     setColorPayload.writeUInt32LE(transition, 9);
-    this.server.send(mkLifxMsg(102, setColorPayload), lifxPort, ip);
+    this.server.send(mkLifxMsg(102, false, setColorPayload), lifxPort, ip);
   };
 }

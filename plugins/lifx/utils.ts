@@ -20,7 +20,7 @@ export const getBroadcastAddr = (networkInterface: string) => {
 };
 
 // simplified version of https://github.com/futomi/node-lifx-lan/blob/master/lib/lifx-lan-composer.js (MIT)
-export const mkLifxMsg = (type: number, payload?: Buffer) => {
+export const mkLifxMsg = (type: number, respond: boolean, payload?: Buffer) => {
   // frame
   // https://lan.developer.lifx.com/docs/header-description#frame
   const frame = Buffer.alloc(8);
@@ -40,7 +40,7 @@ export const mkLifxMsg = (type: number, payload?: Buffer) => {
   // https://lan.developer.lifx.com/docs/header-description#frame-address
   const frameAddress = Buffer.alloc(16);
   const ackRequired = 0;
-  const resRequired = 1;
+  const resRequired = respond ? 1 : 0;
 
   frameAddress.writeUInt8((ackRequired << 1) | resRequired, 14);
 

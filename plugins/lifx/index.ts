@@ -23,7 +23,7 @@ export default class LifxPlugin extends HomectlPlugin<Config> {
 
   constructor(props: PluginProps<Config>) {
     super(props, Config);
-    this.server = new LifxServer(this.config.networkInterface);
+    this.server = new LifxServer(this, this.config.networkInterface);
     this.devices = {};
   }
 
@@ -35,10 +35,7 @@ export default class LifxPlugin extends HomectlPlugin<Config> {
     this.server.discover(device => {
       this.devices[device.label] = device;
 
-      this.sendMsg('devices/discoveredState', t.unknown, {
-        path: mkDevicePath(this, device.label),
-        state: device.state,
-      });
+      this.sendMsg('devices/discoveredState', t.unknown, device.state);
     });
   };
 

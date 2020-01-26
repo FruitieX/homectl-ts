@@ -3,10 +3,9 @@ import * as t from 'io-ts';
 import {
   PluginProps,
   ScenesConfig,
-  DeviceCommand,
-  GroupConfig,
   throwDecoder,
   InternalDeviceStates,
+  InternalDeviceCommand,
 } from '../types';
 import { HomectlPlugin } from '../plugins';
 import tinycolor from '@ctrl/tinycolor';
@@ -34,7 +33,7 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
   async handleMsg(
     path: string,
     payload: unknown,
-  ): Promise<Array<DeviceCommand> | void> {
+  ): Promise<Array<InternalDeviceCommand> | void> {
     const cmd = path;
 
     switch (cmd) {
@@ -50,11 +49,13 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
     }
   }
 
-  async getScene(sceneName: string): Promise<Array<DeviceCommand> | undefined> {
+  async getScene(
+    sceneName: string,
+  ): Promise<Array<InternalDeviceCommand> | undefined> {
     const scene = this.scenes[sceneName];
     if (!scene) return;
 
-    const sceneCommands: Array<DeviceCommand> = [];
+    const sceneCommands: Array<InternalDeviceCommand> = [];
 
     for (const sceneCommand of scene.devices) {
       const dynamicProps = await this.getDynamicProps(sceneCommand);

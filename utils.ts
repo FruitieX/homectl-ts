@@ -9,7 +9,11 @@ export const checkStateEq = (
   internal: InternalDeviceState,
   device: DeviceState,
 ): boolean => {
+  // if power states mismatch, return false
   if (internal.power !== device.power) return false;
+
+  // if power states match and internal power is false, we don't care about color
+  if (internal.power === false) return true;
 
   // checking for color string match before parsing,
   // also both can't be undefined after this

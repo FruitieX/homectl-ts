@@ -32,18 +32,14 @@ export const GroupsConfig = t.record(t.string, GroupConfig);
 export type GroupsConfig = t.TypeOf<typeof GroupsConfig>;
 
 export const DeviceState = t.type({
+  path: t.string,
   power: t.boolean,
   color: t.union([t.string, t.undefined]),
 });
 export type DeviceState = t.TypeOf<typeof DeviceState>;
 
-export const DiscoveredState = t.type({
-  path: t.string,
-  state: DeviceState,
-});
-export type DiscoveredState = t.TypeOf<typeof DiscoveredState>;
-
 export const InternalDeviceState = t.type({
+  path: t.string,
   power: t.boolean,
   color: t.union([t.string, t.undefined]),
   brightness: t.union([t.number, t.undefined]),
@@ -61,16 +57,22 @@ export const DeviceCommand = t.type({
   power: t.boolean,
   color: t.union([t.string, t.undefined]),
   transition: t.union([t.number, t.undefined]),
-
-  // TODO: get rid of this, encode brightness inside color
-  brightness: t.union([t.number, t.undefined]),
 });
 export type DeviceCommand = t.TypeOf<typeof DeviceCommand>;
 export const DeviceCommands = t.array(DeviceCommand);
 export type DeviceCommands = t.TypeOf<typeof DeviceCommands>;
+
+export const InternalDeviceCommand = t.intersection([
+  DeviceCommand,
+  t.type({ brightness: t.union([t.number, t.undefined]) }),
+]);
+export type InternalDeviceCommand = t.TypeOf<typeof InternalDeviceCommand>;
+export const InternalDeviceCommands = t.array(InternalDeviceCommand);
+export type InternalDeviceCommands = t.TypeOf<typeof InternalDeviceCommands>;
+
 export const SceneConfig = t.type({
   name: t.string,
-  devices: t.array(DeviceCommand),
+  devices: t.array(InternalDeviceCommand),
 });
 export const ScenesConfig = t.record(t.string, SceneConfig);
 export type ScenesConfig = t.TypeOf<typeof ScenesConfig>;

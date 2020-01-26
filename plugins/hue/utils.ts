@@ -136,7 +136,7 @@ const getButtonState = (buttonevent: number): boolean => {
   }
 };
 
-export const tinycolorToHue = (color?: TinyColor, brightness = 1) => {
+export const tinycolorToHue = (color?: TinyColor) => {
   if (!color) {
     return {
       hue: undefined,
@@ -153,7 +153,7 @@ export const tinycolorToHue = (color?: TinyColor, brightness = 1) => {
     // tinycolor s value is in [0, 1], Hue uses [0, 254]
     sat: Math.round(hsv.s * 254),
     // tinycolor v value is in [0, 1], Hue uses [1, 254]
-    bri: Math.round(hsv.v * 254 * brightness),
+    bri: Math.round(hsv.v * 254),
   };
 };
 
@@ -177,7 +177,7 @@ export const hueToTinycolor = (
 };
 
 export const sceneCmdToHue = (cmd: DeviceCommand) => {
-  const hueColors = tinycolorToHue(tinycolor(cmd.color), cmd.brightness);
+  const hueColors = tinycolorToHue(tinycolor(cmd.color));
 
   return {
     on: cmd.power,
