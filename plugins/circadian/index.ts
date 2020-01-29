@@ -82,7 +82,7 @@ export default class CircadianPlugin extends HomectlPlugin<Config> {
     switch (cmd) {
       case 'color': {
         const [r, g, b] = kelvinToRGB(this.getCurrentColorTemp());
-        this.log({ r, g, b, ct: this.getCurrentColorTemp() });
+        // this.log({ r, g, b, ct: this.getCurrentColorTemp() });
         return tinycolor({ r, g, b }).toHsvString();
       }
       default:

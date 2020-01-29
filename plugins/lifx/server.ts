@@ -75,7 +75,6 @@ export class LifxServer {
     // broadcast Get (101) message
     // https://lan.developer.lifx.com/docs/light-messages#section-get-101
     this.server.send(mkLifxMsg(101, true), lifxPort, this.broadcastAddr);
-    console.log('sent lifx discovery message');
     this.resetDiscoverTimer();
   };
 

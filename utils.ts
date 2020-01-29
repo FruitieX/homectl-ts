@@ -32,3 +32,13 @@ export const checkStateEq = (
 
   return true;
 };
+
+export const removeUndefined = <T>(obj: T): T => {
+  const copy = { ...obj };
+
+  Object.keys(copy).forEach(
+    key => (copy as any)[key] === undefined && delete (copy as any)[key],
+  );
+
+  return copy;
+};

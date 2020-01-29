@@ -13,7 +13,7 @@ import {
 } from '../types';
 import { HomectlPlugin } from '../plugins';
 import { groupBy } from 'fp-ts/lib/NonEmptyArray';
-import { checkStateEq } from '../utils';
+import { checkStateEq, removeUndefined } from '../utils';
 import tinycolor from '@ctrl/tinycolor';
 
 const Config = t.type({});
@@ -23,7 +23,7 @@ interface State {
   devices: InternalDeviceStates;
 }
 
-const defaultDeviceState: InternalDeviceState = {
+const defaultDeviceState: InternalDeviceState = removeUndefined({
   path: 'unknown',
   brightness: 1,
   scene: undefined,
@@ -31,7 +31,7 @@ const defaultDeviceState: InternalDeviceState = {
   transition: undefined,
   color: undefined,
   power: true,
-};
+});
 
 /**
  * Devices plugin
@@ -96,7 +96,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
       ...device,
       transition: 500, // default transition time, cmd can override
       ...sceneProps,
-      ...cmd,
+      ...removeUndefined(cmd),
     });
   }
 
@@ -160,7 +160,11 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
         return;
       }
 
-      internalState = this.applyDeviceCmd(cmd);
+      // don't reset brightness
+      internalState = this.applyDeviceCmd({
+        ...cmd,
+        brightness: undefined,
+      });
     }
 
     // make sure the discovered state matches with our internal state
