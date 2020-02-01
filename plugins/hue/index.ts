@@ -8,7 +8,6 @@ import {
   BridgeSensor,
   BridgeLights,
   BridgeLight,
-  BridgeLightState,
   BridgeLightStates,
 } from './types';
 import { PluginProps, throwDecoder, DeviceCommand } from '../../types';
@@ -16,17 +15,14 @@ import { HomectlPlugin } from '../../plugins';
 import {
   findHomectlScene,
   bridgeSensorsDiff,
-  tinycolorToHue,
   sceneCmdToHue,
   hueToTinycolor,
 } from './utils';
 import { map } from 'fp-ts/lib/Record';
-import { findIndex } from 'ramda';
 import { findFirst } from 'fp-ts/lib/Array';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { fold } from 'fp-ts/lib/Option';
-import tinycolor from '@ctrl/tinycolor';
-import { mkDevicePath } from '../../utils';
+import { mkDevicePath, removeUndefined } from '../../utils';
 
 const Config = t.type({
   addr: t.string,
@@ -58,8 +54,13 @@ export default class HuePlugin extends HomectlPlugin<Config> {
   ) {
     const baseURL = `http://${this.config.addr}/api/${this.config.username}`;
     if (url !== '/sensors' && url !== '/lights')
-      this.log(`Making hue request to: ${url}`);
-    const { data: response } = await axios({ url, baseURL, method, data });
+      this.log(`Making hue request to: ${url}`, data);
+    const { data: response } = await axios({
+      url,
+      baseURL,
+      method,
+      data: removeUndefined(data),
+    });
     const decoded = throwDecoder(decoder)(
       response,
       `Unable to decode hue response from ${url}`,
@@ -109,18 +110,18 @@ export default class HuePlugin extends HomectlPlugin<Config> {
 
   pollSwitches = async () => {
     try {
-    const newBridgeSensors = await this.request(BridgeSensors, '/sensors');
-    const sensorUpdates = bridgeSensorsDiff(this.id)(
-      this.bridgeSensors,
-      newBridgeSensors,
-    );
-    this.bridgeSensors = newBridgeSensors;
+      const newBridgeSensors = await this.request(BridgeSensors, '/sensors');
+      const sensorUpdates = bridgeSensorsDiff(this.id)(
+        this.bridgeSensors,
+        newBridgeSensors,
+      );
+      this.bridgeSensors = newBridgeSensors;
 
-    for (const update of sensorUpdates) {
-      await this.sendMsg('routines/valueChange', t.unknown, update);
-    }
+      for (const update of sensorUpdates) {
+        await this.sendMsg('routines/valueChange', t.unknown, update);
+      }
     } finally {
-    setTimeout(this.pollSwitches, 100);
+      setTimeout(this.pollSwitches, 100);
     }
   };
 
@@ -145,10 +146,10 @@ export default class HuePlugin extends HomectlPlugin<Config> {
 
   pollLights = async () => {
     try {
-    this.bridgeLights = await this.request(BridgeLights, '/lights');
-    await this.dispatchDiscoveredState();
+      this.bridgeLights = await this.request(BridgeLights, '/lights');
+      await this.dispatchDiscoveredState();
     } finally {
-    this.resetPollLightsTimer();
+      this.resetPollLightsTimer();
     }
   };
 
