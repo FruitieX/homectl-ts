@@ -19,6 +19,10 @@ export const checkStateEq = (
   // also both can't be undefined after this
   if (internal.color === device.color) return true;
 
+  // if internal color is undefined, assume device does not support color - skip
+  // color checks
+  if (internal.color === undefined) return true;
+
   const internalColor = tinycolor(internal.color).toHsv();
   // InternalDeviceState contains the original color, unmodified by brightness.
   // We need to apply brightness here in order to compare these
