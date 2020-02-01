@@ -53,8 +53,8 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     data?: unknown,
   ) {
     const baseURL = `http://${this.config.addr}/api/${this.config.username}`;
-    if (url !== '/sensors' && url !== '/lights')
-      this.log(`Making hue request to: ${url}`, data);
+    // if (url !== '/sensors' && url !== '/lights')
+    //   this.log(`Making hue request to: ${url}`, data);
     const { data: response } = await axios({
       url,
       baseURL,
