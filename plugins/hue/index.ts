@@ -108,6 +108,7 @@ export default class HuePlugin extends HomectlPlugin<Config> {
   };
 
   pollSwitches = async () => {
+    try {
     const newBridgeSensors = await this.request(BridgeSensors, '/sensors');
     const sensorUpdates = bridgeSensorsDiff(this.id)(
       this.bridgeSensors,
@@ -118,8 +119,9 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     for (const update of sensorUpdates) {
       await this.sendMsg('routines/valueChange', t.unknown, update);
     }
-
+    } finally {
     setTimeout(this.pollSwitches, 100);
+    }
   };
 
   dispatchDiscoveredState = async () => {
@@ -142,9 +144,12 @@ export default class HuePlugin extends HomectlPlugin<Config> {
   };
 
   pollLights = async () => {
+    try {
     this.bridgeLights = await this.request(BridgeLights, '/lights');
     await this.dispatchDiscoveredState();
+    } finally {
     this.resetPollLightsTimer();
+    }
   };
 
   resetPollLightsTimer = () => {
