@@ -30,7 +30,12 @@ export const BridgeSceneCreatedResponse = t.tuple([
 
 export const BridgeSensor = t.type({
   state: t.type({
-    buttonevent: t.union([t.number, t.undefined]),
+    buttonevent: t.union([
+      t.number,
+      t.undefined,
+      // null value observed when a new switch is added but no buttons were pressed yet
+      t.null,
+    ]),
     lastupdated: t.string,
   }),
   name: t.string,

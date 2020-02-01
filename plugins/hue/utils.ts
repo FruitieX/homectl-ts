@@ -65,8 +65,8 @@ export const bridgeSensorsDiff = (pluginId: string) => (
 // Because we have to poll for sensor events, we can miss out on some events.
 // This function tries its best to guess what events may have been missed.
 const sensorEvents = (
-  oldButtonEvent: number | undefined,
-  newButtonEvent: number | undefined,
+  oldButtonEvent: number | undefined | null,
+  newButtonEvent: number | undefined | null,
 ): Array<SensorEvent> => {
   if (!oldButtonEvent || !newButtonEvent)
     return [{ id: 'on' as const, value: false }];
