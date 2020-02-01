@@ -110,6 +110,7 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
       return `${subsystem}/${plugin}`;
     })(cmds);
 
+    // TODO: filter out commands that don't affect state
     for (const path in groupedSceneCmds) {
       const group = groupedSceneCmds[path];
 

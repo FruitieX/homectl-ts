@@ -49,7 +49,7 @@ export default class RoutinesPlugin extends HomectlPlugin<Config> {
 
     switch (cmd) {
       case 'valueChange': {
-        this.log(`Got valueChange msg: `, payload);
+        // this.log(`Got valueChange msg: `, payload);
         const sensorUpdate = throwDecoder(SensorUpdate)(
           payload,
           'Unable to decode valueChange payload',
