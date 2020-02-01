@@ -38,9 +38,9 @@ export default class WakeOnLANPlugin extends HomectlPlugin<Config> {
 
   // assuming 00:00:00:00:00:00 format
   invertAddress(a: string) {
-    const getOctet = (offset: number) => `${a[offset * 3]}${[offset * 3 + 1]}`;
+    const getOctet = (offset: number) => `${a[offset * 3]}${a[offset * 3 + 1]}`;
     return range(0, 5)
-      .map(i => getOctet(i))
+      .map(i => getOctet(5 - i))
       .join(':');
   }
 
