@@ -125,6 +125,12 @@ export default class HuePlugin extends HomectlPlugin<Config> {
   dispatchDiscoveredState = async () => {
     for (const lightId in this.bridgeLights) {
       const { state, name } = this.bridgeLights[lightId];
+
+      // Ignore lights that are unreachable according to Hue bridge
+      if (state.reachable === false) {
+        continue;
+      }
+
       const color = hueToTinycolor(state)?.toHsvString();
 
       await this.sendMsg('devices/discoveredState', t.unknown, {
@@ -174,7 +180,13 @@ export default class HuePlugin extends HomectlPlugin<Config> {
         continue;
       }
 
-      lightstates[lightId] = sceneCmdToHue(cmd);
+      lightstates[lightId] = {
+        hue: undefined,
+        sat: undefined,
+        bri: undefined,
+        reachable: undefined,
+        ...sceneCmdToHue(cmd),
+      };
     }
 
     // loop through lightstates and send one request per lightstate update to the bridge

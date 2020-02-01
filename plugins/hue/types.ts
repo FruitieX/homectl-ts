@@ -6,6 +6,7 @@ export const BridgeLightState = t.type({
   hue: t.union([t.number, t.undefined]),
   sat: t.union([t.number, t.undefined]),
   transitiontime: t.union([t.number, t.undefined]),
+  reachable: t.union([t.boolean, t.undefined]),
 });
 export type BridgeLightState = t.TypeOf<typeof BridgeLightState>;
 export const BridgeLightStates = t.record(t.string, BridgeLightState);
