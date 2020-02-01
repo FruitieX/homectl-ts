@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc --project .",
     "start": "ts-node index.ts",
+    "start:release": "npm run build && node ./build/index.js",
     "format": "prettier --write \"./**/*.ts\""
   },
   "author": "",
