@@ -55,8 +55,10 @@ export default class WakeOnLANPlugin extends HomectlPlugin<Config> {
       const address = this.findAlias(name);
 
       if (cmd.power) {
+        this.log(`Sending wake on lan packet to ${address}`);
         wol.wake(address);
       } else if (this.config.sleepOnLAN) {
+        this.log(`Sending sleep on lan packet to ${address}`);
         wol.wake(this.invertAddress(address));
       }
     }
