@@ -15,6 +15,8 @@ import { HomectlPlugin } from '../plugins';
 import { groupBy } from 'fp-ts/lib/NonEmptyArray';
 import { checkStateEq, removeUndefined } from '../utils';
 import tinycolor from '@ctrl/tinycolor';
+import { findLast } from 'fp-ts/lib/Array';
+import { toNullable } from 'fp-ts/lib/Option';
 
 const Config = t.type({});
 type Config = t.TypeOf<typeof Config>;
@@ -152,7 +154,16 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
       );
 
       const rewrittenPath = this.rewritePath(discoveredState.path);
-      const cmd = scene.find(cmd => cmd.path === rewrittenPath);
+
+      // TODO: this isn't entirely correct, since subsequent commands can
+      // override values in previous commands. Here we just pick out the
+      // latest command and go with that, thus possibly missing out on some
+      // values from potential previous commands.
+      const cmd = toNullable(
+        findLast((cmd: InternalDeviceCommand) => cmd.path === rewrittenPath)(
+          scene,
+        ),
+      );
 
       if (!cmd) {
         this.log(

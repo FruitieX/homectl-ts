@@ -60,6 +60,7 @@ export default class ScenesPlugin extends HomectlPlugin<Config> {
     for (const sceneCommand of scene.devices) {
       const dynamicProps = await this.getDynamicProps(sceneCommand);
       const paths = await this.expandPath(sceneCommand.path);
+      // duplicate sceneCmd for each path in paths
       const duplicateSceneCommands = paths.map(path => ({
         ...sceneCommand,
         ...dynamicProps,
