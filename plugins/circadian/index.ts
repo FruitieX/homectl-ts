@@ -2,14 +2,13 @@ import * as t from 'io-ts';
 
 import { PluginProps } from '../../types';
 import { HomectlPlugin } from '../../plugins';
-import { kelvinToRGB } from './kelvin2rgb';
-import tinycolor from '@ctrl/tinycolor';
+import tinycolor, { TinyColor } from '@ctrl/tinycolor';
 
 const Config = t.type({
-  dayColorTemperature: t.number,
+  dayColor: t.string,
   dayFadeStartHour: t.number,
   dayFadeDuration: t.number,
-  nightColorTemperature: t.number,
+  nightColor: t.string,
   nightFadeStartHour: t.number,
   nightFadeDuration: t.number,
 });
@@ -22,11 +21,17 @@ type Config = t.TypeOf<typeof Config>;
  */
 
 export default class CircadianPlugin extends HomectlPlugin<Config> {
+  dayColor: TinyColor;
+  nightColor: TinyColor;
+
   constructor(props: PluginProps<Config>) {
     super(props, Config);
+
+    this.dayColor = tinycolor(this.config.dayColor);
+    this.nightColor = tinycolor(this.config.nightColor);
   }
 
-  getCurrentColorTemp = (): number => {
+  getNightFade = (): number => {
     const t = Date.now();
     const dayFadeStart = new Date().setHours(
       this.config.dayFadeStartHour,
@@ -54,25 +59,19 @@ export default class CircadianPlugin extends HomectlPlugin<Config> {
       0,
     );
 
-    if (t <= dayFadeStart || t >= nightFadeEnd)
-      return this.config.nightColorTemperature;
-    if (t >= dayFadeEnd && t <= nightFadeStart)
-      return this.config.dayColorTemperature;
+    if (t <= dayFadeStart || t >= nightFadeEnd) return 1;
+    if (t >= dayFadeEnd && t <= nightFadeStart) return 0;
 
     if (t < dayFadeEnd) {
       // fading from night to day
       const p = (t - dayFadeStart) / (dayFadeEnd - dayFadeStart);
-      return (
-        this.config.nightColorTemperature * (1 - p) +
-        this.config.dayColorTemperature * p
-      );
+
+      return 1 - p;
     } else {
       // fading from day to night
       const p = (t - nightFadeStart) / (nightFadeEnd - nightFadeStart);
-      return (
-        this.config.dayColorTemperature * (1 - p) +
-        this.config.nightColorTemperature * p
-      );
+
+      return p;
     }
   };
 
@@ -81,9 +80,9 @@ export default class CircadianPlugin extends HomectlPlugin<Config> {
 
     switch (cmd) {
       case 'color': {
-        const [r, g, b] = kelvinToRGB(this.getCurrentColorTemp());
-        // this.log({ r, g, b, ct: this.getCurrentColorTemp() });
-        return tinycolor({ r, g, b }).toHsvString();
+        const p = this.getNightFade();
+        const color = this.dayColor.mix(this.nightColor, p * 100);
+        return color.toHsvString();
       }
       default:
         this.log(`Unknown cmd received: ${cmd}`);
