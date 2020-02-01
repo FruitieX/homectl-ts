@@ -8,6 +8,7 @@ import {
   SensorUpdate,
 } from '../types';
 import { HomectlPlugin } from '../plugins';
+import minimatch from 'minimatch';
 
 const Config = RoutinesConfig;
 type Config = t.TypeOf<typeof Config>;
@@ -103,7 +104,7 @@ export default class RoutinesPlugin extends HomectlPlugin<Config> {
     return Boolean(
       routine.when.find(condition => {
         if (
-          condition.path === sensorUpdate.path &&
+          minimatch(sensorUpdate.path, condition.path) &&
           condition.is === sensorUpdate.value
         )
           return true;
@@ -117,12 +118,22 @@ export default class RoutinesPlugin extends HomectlPlugin<Config> {
    */
   isRoutineTriggered(sensors: Sensors, routine: RoutineConfig) {
     for (const condition of routine.when) {
-      const sensor = sensors[condition.path];
-      if (sensor === undefined) {
+      const mSensor = Object.entries(sensors).find(([path, sensor]) => {
+        // Make sure sensor value matches the condition
+        if (condition.is !== sensor) {
+          return false;
+        }
+
+        // Make sure sensor path matches condition path
+        if (!minimatch(path, condition.path)) {
+          return false;
+        }
+
+        return true;
+      });
+
+      if (mSensor === undefined) {
         this.log(`Unknown sensor with path ${condition.path}`);
-        return false;
-      }
-      if (condition.is !== sensor) {
         return false;
       }
     }
