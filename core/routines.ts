@@ -118,7 +118,7 @@ export default class RoutinesPlugin extends HomectlPlugin<Config> {
    */
   isRoutineTriggered(sensors: Sensors, routine: RoutineConfig) {
     for (const condition of routine.when) {
-      const mSensor = Object.entries(sensors).find(([path, sensor]) => {
+      const match = Object.entries(sensors).find(([path, sensor]) => {
         // Make sure sensor value matches the condition
         if (condition.is !== sensor) {
           return false;
@@ -132,8 +132,7 @@ export default class RoutinesPlugin extends HomectlPlugin<Config> {
         return true;
       });
 
-      if (mSensor === undefined) {
-        this.log(`Unknown sensor with path ${condition.path}`);
+      if (match === undefined) {
         return false;
       }
     }
