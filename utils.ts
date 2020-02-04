@@ -31,8 +31,10 @@ export const checkStateEq = (
   const deviceColor = tinycolor(device.color).toHsv();
 
   if (Math.round(internalColor.h) !== Math.round(deviceColor.h)) return false;
-  if (Math.round(internalColor.s) !== Math.round(deviceColor.s)) return false;
-  if (Math.round(internalColor.v) !== Math.round(deviceColor.v)) return false;
+  if (Math.round(internalColor.s * 100) !== Math.round(deviceColor.s * 100))
+    return false;
+  if (Math.round(internalColor.v * 100) !== Math.round(deviceColor.v * 100))
+    return false;
 
   return true;
 };
