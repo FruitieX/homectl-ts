@@ -1,5 +1,5 @@
 import * as t from 'io-ts';
-import wol from 'wake_on_lan';
+import wol, { WakeOptions } from 'wake_on_lan';
 
 import { PluginProps, throwDecoder, DeviceCommand } from '../../types';
 import { HomectlPlugin } from '../../plugins';
@@ -7,10 +7,11 @@ import { lookup } from 'fp-ts/lib/Record';
 import { fold } from 'fp-ts/lib/Option';
 import { identity } from 'fp-ts/lib/function';
 import { pipe } from 'fp-ts/lib/pipeable';
-import { range } from 'fp-ts/lib/Array';
+import axios from 'axios';
 
 const Config = t.type({
   sleepOnLAN: t.union([t.boolean, t.undefined]),
+  sleepOnLANEndpoint: t.union([t.string, t.undefined]),
   aliases: t.union([t.record(t.string, t.string), t.undefined]),
 });
 type Config = t.TypeOf<typeof Config>;
@@ -36,14 +37,6 @@ export default class WakeOnLANPlugin extends HomectlPlugin<Config> {
     );
   }
 
-  // assuming 00:00:00:00:00:00 format
-  invertAddress(a: string) {
-    const getOctet = (offset: number) => `${a[offset * 3]}${a[offset * 3 + 1]}`;
-    return range(0, 5)
-      .map(i => getOctet(5 - i))
-      .join(':');
-  }
-
   async handleMsg(path: string, payload: unknown) {
     const cmds = throwDecoder(t.array(DeviceCommand))(
       payload,
@@ -53,13 +46,14 @@ export default class WakeOnLANPlugin extends HomectlPlugin<Config> {
     for (const cmd of cmds) {
       const [, , name] = cmd.path.split('/');
       const address = this.findAlias(name);
+      const options: WakeOptions = { num_packets: 1 };
 
       if (cmd.power) {
         this.log(`Sending wake on lan packet to ${address}`);
-        wol.wake(address);
-      } else if (this.config.sleepOnLAN) {
+        wol.wake(address, options);
+      } else if (this.config.sleepOnLAN && this.config.sleepOnLANEndpoint) {
         this.log(`Sending sleep on lan packet to ${address}`);
-        wol.wake(this.invertAddress(address));
+        await axios({ method: 'GET', url: this.config.sleepOnLANEndpoint });
       }
     }
   }
