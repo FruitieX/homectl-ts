@@ -120,6 +120,8 @@ export default class HuePlugin extends HomectlPlugin<Config> {
       for (const update of sensorUpdates) {
         await this.sendMsg('routines/valueChange', t.unknown, update);
       }
+    } catch (e) {
+      this.log('Error while polling switches:', e);
     } finally {
       setTimeout(this.pollSwitches, 100);
     }
@@ -148,6 +150,8 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     try {
       this.bridgeLights = await this.request(BridgeLights, '/lights');
       await this.dispatchDiscoveredState();
+    } catch (e) {
+      this.log('Error while polling lights:', e);
     } finally {
       this.resetPollLightsTimer();
     }
