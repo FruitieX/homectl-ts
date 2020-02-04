@@ -185,17 +185,16 @@ export default class DevicesPlugin extends HomectlPlugin<Config> {
     // states match, do nothing
     if (statesEqual) return;
 
-    // this.log(
-    //   'State mismatch detected, correcting...',
-    //   internalState,
-    //   discoveredState,
-    // );
+    this.log('State mismatch detected, correcting...', {
+      internalState,
+      discoveredState,
+    });
 
     const cmds: DeviceCommands = [
       { path: discoveredState.path, ...internalState },
     ].map(this.internalCmdToDeviceCmd);
 
-    this.sendMsg(discoveredState.path, t.unknown, cmds);
+    await this.sendMsg(discoveredState.path, t.unknown, cmds);
   }
 
   // TODO: this doesn't handle canceling the transition when releasing the dimmer button
