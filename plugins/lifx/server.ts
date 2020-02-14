@@ -1,6 +1,6 @@
 import dgram from 'dgram';
 
-import { getBroadcastAddr, mkLifxMsg } from './utils';
+import { getBroadcastAddr, mkLifxMsg, toLifxHue, fromLifxHue } from './utils';
 import { DiscoverCallback } from './types';
 import { DeviceCommand } from '../../types';
 import tinycolor from '@ctrl/tinycolor';
@@ -29,7 +29,7 @@ export class LifxServer {
         // State (107) message, response to Get (101)
         // https://lan.developer.lifx.com/docs/light-messages#section-state-107
         case 107: {
-          const h = (payload.readUInt16LE(0) / 65535) * 360; // hue
+          const h = fromLifxHue((payload.readUInt16LE(0) / 65535) * 360); // hue
           const s = payload.readUInt16LE(2) / 65535; // saturation
           const b = payload.readUInt16LE(4) / 65535; // brightness
 
@@ -106,7 +106,10 @@ export class LifxServer {
     // send SetColor (102) message
     // https://lan.developer.lifx.com/docs/light-messages#section-setcolor-102
     const setColorPayload = Buffer.alloc(8 + 16 * 4 + 32);
-    setColorPayload.writeUInt16LE(Math.floor((hsv.h / 360) * 65535), 1);
+    setColorPayload.writeUInt16LE(
+      Math.floor((toLifxHue(hsv.h) / 360) * 65535),
+      1,
+    );
     setColorPayload.writeUInt16LE(Math.floor(hsv.s * 65535), 3);
     setColorPayload.writeUInt16LE(Math.floor(hsv.v * 65535), 5);
     setColorPayload.writeUInt16LE(6500, 7);

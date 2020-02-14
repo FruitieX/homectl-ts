@@ -59,3 +59,19 @@ export const mkLifxMsg = (type: number, respond: boolean, payload?: Buffer) => {
 
   return msg;
 };
+
+export const toLifxHue = (h: number) => {
+  if (h > 0 && h < 60) {
+    const p = h / 60;
+    return p ** 1.3 * 60;
+  }
+  return h;
+};
+
+export const fromLifxHue = (h: number) => {
+  if (h > 0 && h < 60) {
+    const p = h / 60;
+    return p ** (1 / 1.3) * 60;
+  }
+  return h;
+};
