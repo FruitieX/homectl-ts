@@ -35,11 +35,23 @@ export const bridgeSensorsDiff = (pluginId: string) => (
         const oldBridgeSensor = oldBridgeSensors[key];
         if (!oldBridgeSensor) return false;
 
-        if (
-          oldBridgeSensor.state.buttonevent !==
-          newBridgeSensor.state.buttonevent
-        )
-          return true;
+        // filter out unsupported sensors
+        if (newBridgeSensor.type !== 'ZLLSwitch' && newBridgeSensor.type !== 'ZLLPresence') return false
+
+        if (oldBridgeSensor.type === 'ZLLSwitch' && newBridgeSensor.type === 'ZLLSwitch') {
+          if (
+            oldBridgeSensor.state.buttonevent !==
+            newBridgeSensor.state.buttonevent
+          )
+            return true;
+        } else if (oldBridgeSensor.type === 'ZLLPresence' && newBridgeSensor.type === 'ZLLPresence') {
+          if (
+            oldBridgeSensor.state.presence !==
+            newBridgeSensor.state.presence
+          )
+            return true
+        }
+
         if (
           oldBridgeSensor.state.lastupdated !==
           newBridgeSensor.state.lastupdated
@@ -50,15 +62,29 @@ export const bridgeSensorsDiff = (pluginId: string) => (
       })
       .map(([key, newBridgeSensor]) => {
         const oldBridgeSensor = oldBridgeSensors[key];
-        const events = sensorEvents(
-          oldBridgeSensor.state.buttonevent,
-          newBridgeSensor.state.buttonevent,
-        );
 
-        return events.map(event => ({
-          path: `integrations/${pluginId}/${newBridgeSensor.name}/${event.id}`,
-          value: event.value,
-        }));
+        if (oldBridgeSensor.type === 'ZLLSwitch' && newBridgeSensor.type === 'ZLLSwitch') {
+          const events = sensorEvents(
+            oldBridgeSensor.state.buttonevent,
+            newBridgeSensor.state.buttonevent,
+          );
+
+          return events.map(event => ({
+            path: `integrations/${pluginId}/${newBridgeSensor.name}/${event.id}`,
+            value: event.value,
+          }));
+        } else if (oldBridgeSensor.type === 'ZLLPresence' && newBridgeSensor.type === 'ZLLPresence') {
+          if (oldBridgeSensor.state.presence !== newBridgeSensor.state.presence) {
+            return [{
+              path: `integrations/${pluginId}/${newBridgeSensor.name}`,
+              value: newBridgeSensor.state.presence,
+            }];
+          }
+
+          return []
+        } else {
+          throw new Error('Unknown bridge sensor type!')
+        }
       }),
   );
 

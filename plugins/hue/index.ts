@@ -95,13 +95,26 @@ export default class HuePlugin extends HomectlPlugin<Config> {
 
     // TODO: refactor this to not use this.app.emit
     map((sensor: BridgeSensor) => {
-      if (sensor.type !== 'ZLLSwitch') return;
-      ['on', 'dimUp', 'dimDown', 'off'].map(button =>
-        this.app.emit(
-          'registerSensor',
-          `integrations/${this.id}/${sensor.name}/${button}`,
-        ),
-      );
+      switch (sensor.type) {
+        case 'ZLLSwitch': {
+          ['on', 'dimUp', 'dimDown', 'off'].map(button =>
+            this.app.emit(
+              'registerSensor',
+              `integrations/${this.id}/${sensor.name}/${button}`,
+            ),
+          );
+          break;
+        }
+        case 'ZLLPresence': {
+          this.app.emit(
+            'registerSensor',
+            `integrations/${this.id}/${sensor.name}`,
+          );
+          break;
+        }
+        default:
+          this.log('Ignoring unknown sensor type', (sensor as any).type);
+      }
     })(this.bridgeSensors);
 
     this.pollSwitches();

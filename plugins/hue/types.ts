@@ -29,7 +29,7 @@ export const BridgeSceneCreatedResponse = t.tuple([
   t.type({ success: t.type({ id: t.string }) }),
 ]);
 
-export const BridgeSensor = t.type({
+export const BridgeLightSwitch = t.type({
   state: t.type({
     buttonevent: t.union([
       t.number,
@@ -40,8 +40,30 @@ export const BridgeSensor = t.type({
     lastupdated: t.string,
   }),
   name: t.string,
-  type: t.string,
-});
+  type: t.literal("ZLLSwitch"),
+})
+export type BridgeLightSwitch = t.TypeOf<typeof BridgeLightSwitch>;
+
+export const BridgeMotionSensor = t.type({
+  state: t.type({
+    presence: t.boolean,
+    lastupdated: t.string,
+  }),
+  name: t.string,
+  type: t.literal("ZLLPresence"),
+})
+export type BridgeMotionSensor = t.TypeOf<typeof BridgeMotionSensor>;
+
+export const BridgeGenericSensor = t.type({
+  state: t.type({
+    lastupdated: t.string,
+  }),
+  name: t.string,
+  type: t.keyof({ Daylight: null, ZLLTemperature: null, ZLLLightLevel: null }),
+})
+export type BridgeGenericSensor = t.TypeOf<typeof BridgeGenericSensor>;
+
+export const BridgeSensor = t.union([BridgeLightSwitch, BridgeMotionSensor, BridgeGenericSensor]);
 export type BridgeSensor = t.TypeOf<typeof BridgeSensor>;
 
 export const BridgeSensors = t.record(t.string, BridgeSensor);

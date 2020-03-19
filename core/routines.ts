@@ -79,7 +79,7 @@ export default class RoutinesPlugin extends HomectlPlugin<Config> {
 
       // Only trigger routine if it wasn't triggered before
       if (!wasTriggered && wouldBeTriggered) {
-        this.log(`Triggering routine ${routineName}`);
+        this.log(`Triggering routine ${routineName} (sensor: ${sensorUpdate.path})`);
         for (const action of routine.do) {
           const [path, ...payload] = action.split(' ');
           await this.sendMsg(
