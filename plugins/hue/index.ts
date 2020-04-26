@@ -144,11 +144,6 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     for (const lightId in this.bridgeLights) {
       const { state, name } = this.bridgeLights[lightId];
 
-      // Ignore lights that are unreachable according to Hue bridge
-      if (state.reachable === false) {
-        continue;
-      }
-
       const color = hueToTinycolor(state)?.toHsvString();
 
       await this.sendMsg('devices/discoveredState', t.unknown, {
