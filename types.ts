@@ -14,7 +14,7 @@ export type IntegrationsConfig = t.TypeOf<typeof IntegrationsConfig>;
 
 export const Condition = t.type({
   path: t.string,
-  is: t.boolean,
+  is: t.unknown,
 });
 export const RoutineConfig = t.type({
   when: t.array(Condition),
