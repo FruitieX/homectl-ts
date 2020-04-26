@@ -28,6 +28,15 @@ export default class WakeOnLANPlugin extends HomectlPlugin<Config> {
     super(props, Config);
   }
 
+  start = async () => {
+    for (const alias in this.config.aliases) {
+      await this.sendMsg('devices/discoveredState', t.unknown, {
+        path: `integrations/${this.id}/${alias}`,
+        power: false,
+      })
+    }
+  }
+
   findAlias(name: string) {
     if (!this.config.aliases) return name;
 
