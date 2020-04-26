@@ -69,7 +69,6 @@ export default class HuePlugin extends HomectlPlugin<Config> {
 
   async register() {
     const bridgeState = await this.request(BridgeState, '/');
-    this.log({ bridgeState });
 
     this.bridgeLights = bridgeState.lights;
     this.bridgeSensors = bridgeState.sensors;
