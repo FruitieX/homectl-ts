@@ -19,6 +19,7 @@ type Config = t.TypeOf<typeof Config>;
  */
 
 export default class VerisurePlugin extends HomectlPlugin<Config> {
+  jSessionIdCookie = '';
   usernameCookie = '';
   vidCookie = '';
   accessTokenCookie = '';
@@ -34,9 +35,10 @@ export default class VerisurePlugin extends HomectlPlugin<Config> {
   }
 
   async register() {
-    // TODO: consider calling this.doLogin once per hour?
     await this.doLogin();
+    // setTimeout(this.doLogin, 15 * 60 * 1000); // re-login every 15 min, TODO: figure out how to get rid of this
     setTimeout(this.doRefreshToken, 60 * 1000)
+    setTimeout(this.doExtendLogin, 60 * 1000)
     this.doPollStatus();
 
     this.app.emit('registerSensor', this.path)
@@ -52,13 +54,13 @@ export default class VerisurePlugin extends HomectlPlugin<Config> {
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       }
     })
-    const jSessionIdCookie = jSpringSecurityCheck.headers["set-cookie"][0]
+    this.jSessionIdCookie = jSpringSecurityCheck.headers["set-cookie"][0]
 
     // this gets the username and vid cookies needed for next steps
     const status = await axios({
       url: 'https://mypages.verisure.com/fi/status',
       method: 'GET',
-      headers: { Cookie: jSessionIdCookie }
+      headers: { Cookie: this.jSessionIdCookie }
     })
     this.usernameCookie = status.headers["set-cookie"].find((cookie: string) => cookie.startsWith('username='))
     this.vidCookie = status.headers["set-cookie"].find((cookie: string) => cookie.startsWith('vid='))
@@ -80,6 +82,21 @@ export default class VerisurePlugin extends HomectlPlugin<Config> {
     const instDict = decodedAccessToken["vcp-prm"].inst
     const firstInstKey = Object.keys(instDict)[0]
     this.giid = firstInstKey
+  }
+
+  // verisure web app calls this once per minute, maybe extends the vid validity?
+  doExtendLogin = async () => {
+    try {
+      await axios({
+        url: 'https://mypages.verisure.com/session/extend',
+        method: 'GET',
+        headers: { Cookie: this.jSessionIdCookie }
+      })
+    } catch (e) {
+      this.log('Error while extending Verisure login:', e);
+    } finally {
+      setTimeout(this.doExtendLogin, 60 * 1000)
+    }
   }
 
   doRefreshToken = async () => {
@@ -123,7 +140,7 @@ export default class VerisurePlugin extends HomectlPlugin<Config> {
         }]
       })
 
-      // can be one of: "CHANGE_IN_PROGRESS", "DISARMED", "ARMED_HOME", "???"
+      // can be one of: "CHANGE_IN_PROGRESS", "DISARMED", "ARMED_HOME", "ARMED_AWAY"
       const armStatus = status.data.data.query.armState.statusType
 
       // console.log(Date.now(), { armStatus })
@@ -138,7 +155,7 @@ export default class VerisurePlugin extends HomectlPlugin<Config> {
   setArmStatus = (armStatus: string) => {
     // if this.armStatus is undefined we haven't learned the initial armStatus yet
     if (this.armStatus !== undefined && armStatus !== this.armStatus) {
-      this.log('triggering valueChange with status', armStatus);
+      // this.log('triggering valueChange with status', armStatus);
       this.sendMsg('routines/valueChange', t.unknown, {
         path: this.path,
         value: armStatus
