@@ -37,7 +37,6 @@ type Config = t.TypeOf<typeof Config>;
  */
 
 export default class HuePlugin extends HomectlPlugin<Config> {
-  homectlSceneId = '';
   bridgeSensors: BridgeSensors = {};
   bridgeLights: BridgeLights = {};
   pollLightsTimer: NodeJS.Timeout | undefined;
@@ -74,20 +73,6 @@ export default class HuePlugin extends HomectlPlugin<Config> {
 
     this.bridgeLights = bridgeState.lights;
     this.bridgeSensors = bridgeState.sensors;
-
-    let homectlSceneId = findHomectlScene(bridgeState);
-    if (!homectlSceneId) {
-      const createdScene = await this.request(
-        BridgeSceneCreatedResponse,
-        '/scenes',
-        'POST',
-        { lights: [], recycle: true, name: 'homectl' },
-      );
-      homectlSceneId = createdScene[0].success.id;
-    }
-    this.homectlSceneId = homectlSceneId;
-
-    this.log({ homectlSceneId });
   }
 
   start = async () => {
@@ -228,19 +213,5 @@ export default class HuePlugin extends HomectlPlugin<Config> {
     // TODO: use group 0 if lightstates contains all bridge lights
 
     // idea 2: store commonly used scenes in the bridge, update these periodically (if they contain changes)
-
-    // idea 3: program the lightstate changes into a scene and switch to that scene instantly
-    // (turns out this doesn't work very well)
-
-    // const body = {
-    //   lights: Object.keys(lightstates),
-    //   lightstates
-    // }
-    //
-    // this.log('updating scene', { body })
-    // await this.request(t.unknown, `/scenes/${this.homectlSceneId}`, 'PUT', body)
-    // this.log('activating scene')
-    // await this.request(t.unknown, `/groups/0/action`, 'PUT', { scene: this.homectlSceneId })
-    // this.log('activated scene')
   }
 }
