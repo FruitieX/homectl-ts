@@ -14,7 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "@ctrl/tinycolor": "^2.6.0",
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "cosmiconfig": "^6.0.0",
     "fp-ts": "^2.3.1",
     "io-ts": "^2.0.2",
